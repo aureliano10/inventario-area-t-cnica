@@ -20,13 +20,14 @@ export function InventoryScreen() {
   const [teacherForm, setTeacherForm] = useState("")
   const [teacherError, setTeacherError] = useState<string | null>(null)
   const [teacherQuery, setTeacherQuery] = useState("")
+  const [showTeachersModal, setShowTeachersModal] = useState(false)
   const [query, setQuery] = useState("")
   const [sector, setSector] = useState("")
   const [status, setStatus] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", category: "", sector: "" as "" | Sector, location: "", code: "" })
 
-  const filteredTeachers = useMemo(() => {
+  const filteredTeachersModal = useMemo(() => {
     const q = teacherQuery.trim().toLowerCase()
     if (!q) return teachers
     return teachers.filter((t) => t.toLowerCase().includes(q))
@@ -127,67 +128,16 @@ export function InventoryScreen() {
 
       {user?.role === "encargado" && (
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-base font-semibold">Docentes habilitados</p>
-                  <p className="text-sm text-muted-foreground">
-                    {filteredTeachers.length}
-                    {teacherQuery.trim() ? ` / ${teachers.length}` : ""} {teachers.length === 1 ? "docente" : "docentes"}
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground">Se usan para préstamos a alumno, préstamos por lote y reservas de proyectores.</p>
-              </div>
-              <form onSubmit={addNewTeacher} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <Label htmlFor="teacher-name">Agregar docente</Label>
-                  <Input id="teacher-name" className="mt-1.5" placeholder="Ej: Prof. María López" value={teacherForm} onChange={(e) => setTeacherForm(e.target.value)} />
-                </div>
-                <Button type="submit">
-                  <Plus className="mr-1 size-4" aria-hidden="true" />
-                  Agregar
-                </Button>
-              </form>
-              {teacherError && <p className="text-sm text-destructive">{teacherError}</p>}
-              {teachers.length > 0 && (
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    placeholder="Buscar docente..."
-                    className="h-9 pl-8"
-                    value={teacherQuery}
-                    onChange={(e) => setTeacherQuery(e.target.value)}
-                  />
-                </div>
-              )}
-              {teachers.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">No hay docentes habilitados cargados.</p>
-              ) : filteredTeachers.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">No hay resultados para "{teacherQuery}".</p>
-              ) : (
-                <div className="max-h-[320px] overflow-y-auto rounded-md border">
-                  <div className="flex flex-wrap gap-2 p-3">
-                    {filteredTeachers.map((t) => (
-                      <div key={t} className="flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-sm shadow-sm">
-                        <span className="max-w-[200px] truncate">{t}</span>
-                        <button
-                          type="button"
-                          className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => {
-                            removeTeacher(t)
-                            toast("Docente eliminado")
-                          }}
-                          aria-label={`Quitar ${t}`}
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base font-semibold">Docentes habilitados</p>
+              <p className="text-sm text-muted-foreground">
+                {teachers.length} {teachers.length === 1 ? "docente habilitado" : "docentes habilitados"} para préstamos y reservas
+              </p>
             </div>
+            <Button variant="outline" onClick={() => setShowTeachersModal(true)}>
+              Gestionar docentes
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -305,6 +255,83 @@ export function InventoryScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {showTeachersModal && user?.role === "encargado" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <Card className="w-full max-w-2xl">
+            <CardContent className="flex flex-col gap-4 pt-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold">Gestionar docentes habilitados</p>
+                  <p className="text-sm text-muted-foreground">Agregá o quitá docentes para usar en préstamos y reservas de proyectores.</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => { setShowTeachersModal(false); setTeacherQuery(""); setTeacherError(null) }}>
+                  <X className="size-4" />
+                </Button>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  addNewTeacher(e)
+                  if (!teacherError) setTeacherForm("")
+                }}
+                className="flex flex-col gap-2 sm:flex-row sm:items-end"
+              >
+                <div className="flex-1">
+                  <Label htmlFor="teacher-name-modal">Agregar docente</Label>
+                  <Input id="teacher-name-modal" className="mt-1.5" placeholder="Ej: Prof. María López" value={teacherForm} onChange={(e) => setTeacherForm(e.target.value)} />
+                </div>
+                <Button type="submit">
+                  <Plus className="mr-1 size-4" aria-hidden="true" />
+                  Agregar
+                </Button>
+              </form>
+              {teacherError && <p className="text-sm text-destructive">{teacherError}</p>}
+              {teachers.length > 0 && (
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    placeholder="Buscar docente..."
+                    className="h-9 pl-8"
+                    value={teacherQuery}
+                    onChange={(e) => setTeacherQuery(e.target.value)}
+                  />
+                </div>
+              )}
+              {teachers.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No hay docentes habilitados cargados.</p>
+              ) : filteredTeachersModal.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No hay resultados para "{teacherQuery}".</p>
+              ) : (
+                <div className="max-h-[320px] overflow-y-auto rounded-md border">
+                  <div className="flex flex-wrap gap-2 p-3">
+                    {filteredTeachersModal.map((t) => (
+                      <div key={t} className="flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-sm shadow-sm">
+                        <span className="max-w-[240px] truncate">{t}</span>
+                        <button
+                          type="button"
+                          className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            removeTeacher(t)
+                            toast("Docente eliminado")
+                          }}
+                          aria-label={`Quitar ${t}`}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => { setShowTeachersModal(false); setTeacherQuery(""); setTeacherError(null) }}>
+                  Cerrar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </>
   )
 }
