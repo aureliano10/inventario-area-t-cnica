@@ -7,6 +7,7 @@ import {
   Boxes,
   ClipboardList,
   FileDown,
+  History,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ const NAV: { href: string; label: string; icon: typeof Boxes; roles: Role[]; sho
   { href: "/devolucion", label: "Devolución", icon: Undo2, roles: ["encargado"], shortcut: "D" },
   { href: "/proyectores", label: "Proyectores", icon: Projector, roles: ["encargado"], shortcut: "P" },
   { href: "/consulta", label: "Consulta rápida", icon: ScanSearch, roles: ["encargado"], shortcut: "C" },
+  { href: "/historial", label: "Historial de préstamos", icon: History, roles: ["encargado", "directivo"] },
   { href: "/inventario", label: "Inventario", icon: ClipboardList, roles: ["encargado", "directivo"] },
   { href: "/reportes", label: "Reportes", icon: FileDown, roles: ["encargado", "directivo"] },
 ]
@@ -155,7 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main id="contenido" className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6">{children}</div>
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 overflow-visible">{children}</div>
       </main>
     </div>
   )

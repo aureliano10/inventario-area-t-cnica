@@ -35,7 +35,7 @@ export const ItemScanner = forwardRef<HTMLInputElement, ItemScannerProps>(functi
     return items
       .filter((i) => (suggestionFilter ? suggestionFilter(i) : true))
       .filter((i) => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q))
-      .slice(0, 6)
+      .slice(0, 12)
   }, [items, query, suggestionFilter])
 
   function submit(item: Item) {
@@ -104,7 +104,7 @@ export const ItemScanner = forwardRef<HTMLInputElement, ItemScannerProps>(functi
           <ul
             id={listId}
             role="listbox"
-            className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border bg-popover shadow-lg"
+            className="absolute inset-x-0 top-full z-[100] mt-1 max-h-[min(360px,50vh)] overflow-y-auto overscroll-contain rounded-lg border bg-popover shadow-2xl"
           >
             {suggestions.map((s, i) => (
               <li

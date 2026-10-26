@@ -1,0 +1,425 @@
+
+
+============================================================
+Casos_De_Uso_Textual.pdf
+============================================================
+
+Descripción Textual de Casos de Uso
+Institución:  Escuela Normal Superior Dalmacio Vélez Sarsfield
+Proyecto:  Sistema de Control de Préstamos de Área Técnica y Biblioteca
+Grupo:  N° 2
+Caso de Uso UC1: Ver Panel de Préstamos Activos
+Resumen:  El encargado puede ver en la pantalla principal una lista de todo lo que está
+prestado y aún no se devolvió.
+Actores:  Encargado (primario), Sistema (secundario).
+Metas:  El encargado quiere saber rápido qué herramientas faltan en el inventario para poder
+controlarlas antes de irse.
+Precondiciones:  El encargado inició sesión en el sistema.
+Poscondiciones:  El sistema muestra una lista al día con los equipos que faltan devolver.
+Escenario Principal (Paso a paso):
+El encargado entra a la pantalla principal.
+El sistema busca en la base de datos todos los equipos que figuran como "prestados".
+El sistema muestra la lista en pantalla con el nombre de quién lo tiene.
+Flujos Alternativos (Posibles errores):
+A1 - No hay préstamos:  Si todo está devuelto, el sistema muestra un mensaje diciendo "El
+inventario está completo, no hay préstamos activos".
+Caso de Uso UC2: Registrar Préstamo a Alumno
+Resumen:  Sirve para anotar que un alumno se llevó una herramienta, dejando registrado qué
+profesor le dio permiso.
+Actores:  Encargado (primario), Sistema (secundario).
+Metas:  Entregar la herramienta rápido para que no se armen filas y dejar claro quién es el
+responsable.
+Precondiciones:  El encargado inició sesión. La herramienta está disponible.
+Poscondiciones:  Queda anotado el préstamo y la herramienta pasa a figurar como "Prestada".
+Escenario Principal (Paso a paso):
+El encargado hace clic en "Nuevo Préstamo".
+El sistema le pide que lea el código de barras de la herramienta.
+El encargado escanea la herramienta.1. 
+2. 
+3. 
+• 
+1. 
+2. 
+3. 
+
+El sistema verifica que esté disponible y pide los datos del alumno y del profesor que
+autoriza.
+El encargado escribe los datos y acepta.
+El sistema guarda todo y avisa que el préstamo se registró bien.
+Flujos Alternativos (Posibles errores):
+A1 - Herramienta no disponible:  Si al escanearla el sistema detecta que ya estaba
+prestada o rota, avisa del error y cancela el paso.
+Caso de Uso UC3: Registrar Préstamo a Docente (Por Lote)
+Resumen:  Permite anotar de una sola vez varias herramientas que se lleva un profesor para su
+clase.
+Actores:  Encargado (primario), Sistema (secundario).
+Precondiciones:  El encargado inició sesión. Las herramientas están disponibles.
+Poscondiciones:  Quedan anotados todos los equipos a nombre del profesor y pasan a figurar
+como "Prestados".
+Escenario Principal (Paso a paso):
+El encargado hace clic en "Préstamo por Lote".
+Escribe el nombre del profesor.
+El encargado escanea uno por uno todos los códigos de barras de las herramientas.
+El sistema muestra la lista de todo lo escaneado.
+El encargado confirma que la lista está bien.
+El sistema guarda el préstamo de todas las herramientas juntas.
+Caso de Uso UC4: Gestionar Reservas de Proyectores
+Resumen:  Es una sección especial solo para organizar qué profesor va a usar un proyector y
+en qué horario.
+Actores:  Encargado (primario), Sistema (secundario).
+Precondiciones:  El proyector existe en el sistema.
+Poscondiciones:  Queda guardada la reserva y nadie más puede pedir el proyector en ese
+horario.
+Escenario Principal (Paso a paso):
+El encargado entra a la sección "Proyectores".
+El sistema muestra un calendario con los horarios libres y ocupados.
+El encargado elige un proyector, un horario y anota al profesor.
+El sistema guarda la reserva y bloquea ese horario.4. 
+5. 
+6. 
+• 
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+1. 
+2. 
+3. 
+4. 
+
+Flujos Alternativos (Posibles errores):
+A1 - Horario ocupado:  Si el encargado intenta reservar en un horario que ya tiene dueño, el
+sistema le avisa que está ocupado y le pide que elija otro.
+Caso de Uso UC5: Escanear Código de Barras
+Resumen:  Sirve para escanear cualquier herramienta perdida o suelta y saber al instante de
+dónde es y si debería estar prestada.
+Actores:  Encargado (primario), Sistema (secundario).
+Poscondiciones:  El sistema muestra la ficha técnica de la herramienta.
+Escenario Principal (Paso a paso):
+El encargado hace clic en "Consulta Rápida".
+Escanea la herramienta.
+El sistema muestra el nombre, en qué estante va, de qué sector es y su estado (Disponible/
+Prestado/Roto).
+Flujos Alternativos (Posibles errores):
+A1 - Código no existe:  Si escanea algo que no es del colegio, el sistema avisa que no lo
+encuentra en el inventario.
+Caso de Uso UC6: Registrar Devolución
+Resumen:  Sirve para anotar que devolvieron una herramienta, liberando al profesor o alumno
+de la responsabilidad.
+Actores:  Encargado (primario), Sistema (secundario).
+Precondiciones:  La herramienta figura como "Prestada".
+Poscondiciones:  El préstamo se cierra y la herramienta vuelve a estar "Disponible".
+Escenario Principal (Paso a paso):
+El encargado hace clic en "Devolución".
+Escanea la herramienta que le acaban de entregar.
+El sistema muestra quién la tenía y pregunta si está en buen estado.
+El encargado elige "Buen estado" y confirma.
+El sistema cierra el préstamo.
+Caso de Uso UC7: Marcar Equipo como Dañado
+Resumen:  Permite anotar que una herramienta volvió rota, dejando constancia de quién la
+rompió.
+Actores:  Encargado (primario), Sistema (secundario).• 
+1. 
+2. 
+3. 
+• 
+1. 
+2. 
+3. 
+4. 
+5. 
+
+Poscondiciones:  La herramienta pasa a figurar como "Dañada" para que nadie más la pueda
+pedir, y se guarda el historial.
+Escenario Principal (Paso a paso):
+Mientras hace una devolución (Paso 3 del caso anterior), el encargado nota que la
+herramienta está rota y elige "Dañado".
+El sistema le pide que escriba qué le pasó a la herramienta.
+El encargado escribe el problema y confirma.
+El sistema guarda el texto, cierra el préstamo y bloquea la herramienta.
+Flujos Alternativos (Posibles errores):
+A1 - No escribió el problema:  Si el encargado intenta guardar sin escribir qué se rompió, el
+sistema le exige que complete el texto.
+Caso de Uso UC8: Exportar Reportes (Excel/PDF)
+Resumen:  Sirve para descargar un archivo con la lista de inventario o de préstamos para
+dárselo a los directivos.
+Actores:  Directivo o Encargado (primario), Sistema (secundario).
+Precondiciones:  Hay datos cargados en el sistema.
+Poscondiciones:  Se descarga un archivo a la computadora.
+Escenario Principal (Paso a paso):
+El usuario entra a "Reportes".
+Elige qué quiere descargar (ejemplo: "Préstamos de hoy") y el formato (PDF o Excel).
+Hace clic en "Generar".
+El sistema arma el archivo con la información y lo descarga a la PC.1. 
+2. 
+3. 
+4. 
+• 
+1. 
+2. 
+3. 
+4. 
+
+============================================================
+Diagrama casos de uso.drawio.pdf
+============================================================
+
+Registrar préstamo a 
+alumno
+Registrar préstamo a 
+docente (por lote)
+Gestionar proyectores
+Escanear codigo de 
+barrasVer panel de prestamos
+activos
+Registrar devolucion
+Marcar equipo 
+como dañado
+Exportar reportes
+(EXCEL/PDF)Encargado
+Directivo
+
+============================================================
+Diagrama de clases.drawio.pdf
+============================================================
+
+Equipos
++ codigo_barras : Texto
++ nombre : Texto
++ sector : Texto
++ ubicacion_fisica : Texto
++ es_proyector : Booleano
++ estado_actual : Texto
++ actualizarEstado()
++ obtenerUbicacion()*
+*solicitado por1
+1
+registrado porPrestamos
++ id_prestamo : Numero
++ fecha_hora_salida :
+FechaHora
++ fecha_hora_devolucion :
+FechaHora
++ estado_prestamo : Texto
++ nombre_alumno: Texto
++ registrarDevolucion()
++ registrarDanio()Docentes
++ id_docente : Numero
++ nombre_completo : Texto
+Usuarios
++ id_usuario : Numero
++ nombre_usuario : Texto
++ id_rol : Numero
++ iniciarSesion()
++ exportarReportes()1*contiene
+*
+1contiene
+Areas
++id_area: Numero
++ nombre: Texto1*contieneDirectivo
++id_rol: Numero
++ nombre: Texto*1T ecnico
++id_rol: Numero
++ nombre: Texto
+
+============================================================
+Guia_Metodologica_Proyecto.pdf
+============================================================
+
+PROYECTO: (Completar)
+DESDE EL PROBLEMA HASTA EL BACKLOG
+Nombre de la Institución: [Completar]
+Carrera: [Completar ]
+Asignatura: [Completar]
+Fecha de Presentación: DD / MM / 2026
+Equipo de Trabajo e Integrantes:
+• [Nombre Alumno 1] - Rol: Product Owner (PO)
+• [Nombre Alumno 2] - Rol: Scrum Master (SM)
+• [Nombre Alumno 3] - Rol: Developer / Business Analyst
+• [Nombre Alumno 4] - Rol: Developer / QA Specialist
+
+HOJA DE RUTA GENERAL DEL DOCUMENTO
+Módulo 1: Fundaciones del Proyecto, Estructura de Equipo y Definición del 
+Problema
+Módulo 2: Empatía, Plan de Investigación y Diseño de Instrumentos de Campo
+Módulo 3: Ingeniería de Requisitos, Análisis de Stakeholders y Backlog Inicial
+Módulo 4: Análisis Estratégico FODA y Matriz de Gestión de Riesgos Técnicos
+Módulo 1: Fundaciones del Proyecto y Concepción
+1.1 Estructura del Equipo y Asignación de Roles (Output 1A)
+En consonancia con la fase inicial de Planificación y Análisis del Ciclo de Vida de Desarrollo de 
+Software (SDLC), el equipo de desarrollo se organiza de forma multidisciplinaria bajo roles 
+ágiles definidos. La estructura interna garantiza un canal claro de comunicación y la toma de 
+decisiones orientada a la creación de un producto mantenible y seguro.
+Product Owner (PO): [Completar Nombre]: Encargado de coordinar la visión de negocio, 
+validar el valor entregado al usuario final y priorizar el Backlog.
+Scrum Master (SM): [Completar Nombre]: Líder facilitador responsable de velar por el 
+marco metodológico ágil y remover bloqueos operacionales.
+Equipo de Desarrollo / Analistas: [Completar Nombres]: Responsables técnicos del 
+análisis, recolección de requisitos y desarrollo futuro de la solución.
+1.2 Documento de Definición del Problema (Output 1B)
+[Instrucciones para los alumnos: Redactar un texto de máximo dos párrafos que describa 
+detalladamente: 1) ¿Cuál es el problema o dolor real del usuario en el escenario del mundo 
+real analizado? 2) ¿A qué actores o sectores afecta directamente este dolor institucional? 
+3) ¿De qué manera puntual el software y la automatización lógica resolverán esta brecha 
+operacional?]
+Módulo 2: Empatía, Investigación y Diseño de Instrumentos
+2.1 Política de Privacidad de Datos y Enfoque Inclusivo (GDPR / WCAG)
+Bajo los principios éticos y regulaciones internacionales como el GDPR, se implementa una 
+política estricta de minimización de datos. Los instrumentos de investigación de campo se 
+configuran de manera que no se recolecten datos personales o de identidad críticos (nombres,
+correos, identificadores) a menos que sea estrictamente necesario para el flujo lógico del 
+software. En términos de inclusión digital, los cuestionarios y guiones se diseñan empleando 
+un lenguaje accesible y libre de tecnicismos complejos, permitiendo que cualquier stakeholder
+interactúe de forma intuitiva.
+2.2 Diseño de Instrumentos de Campo (Output 2)
+[Instrucciones de entrega: El equipo debe optar por uno de los siguientes instrumentos y 
+adjuntar su diseño formal:
+• Opción A (Encuesta Cuantitativa): Cuestionario digital (máximo 10 preguntas) 
+balanceando opciones cerradas para métricas y preguntas abiertas.
+
+• Opción B (Entrevista Cualitativa): Guion de entrevista estructurado con un mínimo de 5 a 
+7 preguntas abiertas enfocadas en extraer las frustraciones del stakeholder.]
+Módulo 3: Ingeniería de Requisitos y Filosofía Ágil
+3.1 Matriz de Poder e Interés de Interesados (Output 3A)
+Stakeholder 
+AnalizadoNivel de Poder Nivel de Interés Estrategia de 
+Gestión (Foco 
+Ágil)
+[Ej: Perfil Directivo / 
+Negocio][Alto / Bajo] [Alto / Bajo] [Completar: Ej. 
+Gestionar de cerca 
+mediante informes 
+de KPI diarios]
+[Ej: Operador 
+Administrativo][Alto / Bajo] [Alto / Bajo] [Completar: Ej. 
+Mantener informado 
+a través de 
+herramientas de 
+carga masiva]
+[Ej: Usuario Final / 
+Operario][Alto / Bajo] [Alto / Bajo] [Completar: Ej. 
+Involucrar 
+activamente con 
+interfaces de alta 
+accesibilidad]
+3.2 Backlog Inicial de Historias de Usuario Priorizado (Output 3B)
+Nota de Diseño Universal (WCAG): Las siguientes especificaciones técnicas han sido estructuradas 
+considerando la compatibilidad con lectores de pantalla, contrastes de color adecuados y navegación 
+completa por teclado desde el día cero.
+ID Como... (Rol del 
+Usuario)Quiero... (Acción /
+Requisito 
+Funcional)Para... (Valor / 
+Beneficio del 
+Proyecto)
+US01 [Rol de Usuario] [Funcionalidad o 
+requerimiento 
+técnico libre de 
+ambigüedades][Beneficio de 
+negocio esperado 
+por el stakeholder]
+US02 [Rol de Usuario] [Funcionalidad o 
+requerimiento 
+técnico libre de 
+ambigüedades][Beneficio de 
+negocio esperado 
+por el stakeholder]
+... [Completar mínimo 8
+a 10 historias][Completar mínimo 8
+a 10 historias][Completar mínimo 8
+a 10 historias]
+
+Módulo 4: Análisis Estratégico y Gestión de Riesgos
+4.1 Matriz FODA del Proyecto (Output 4A)
+Análisis Estratégico Origen Interno (Equipo / 
+Solución)Origen Externo 
+(Contexto / Mercado)
+Factores Positivos Fortalezas (Internas):
+[Ej. Disponibilidad de un 
+stack tecnológico robusto, 
+competencias técnicas del 
+equipo, documentación 
+clara].Oportunidades (Externas):
+[Ej. Carencia de 
+competidores directos en el 
+sector, predisposición 
+institucional favorable para 
+la digitalización].
+Factores Negativos Debilidades (Internas):
+[Ej. Falta de experiencia 
+avanzada en arquitecturas 
+offline distribuidas, escasez 
+de recursos 
+presupuestarios].Amenazas (Externas):
+[Ej. Cambios abruptos en las 
+normativas gubernamentales
+locales, intermitencias 
+crónicas en APIs de 
+terceros].
+4.2 Matriz de Calificación de Riesgos y Mitigación (Output 4B)
+ID Descripción 
+del Riesgo 
+(Técnico / 
+Operativo)Probabilidad Impacto Plan de 
+Mitigación 
+(Acciones 
+Preventivas)
+R01 [Ej: Falla o caída
+en el servidor 
+principal de 
+datos][Baja / Media / 
+Alta][Bajo / Medio / 
+Alto][Ej. 
+Programación 
+de backups 
+locales 
+automáticos en 
+caliente con 
+sincronización 
+diferida]
+R02 [Ej: Resistencia 
+al cambio o baja
+adopción por 
+parte del 
+usuario][Baja / Media / 
+Alta][Bajo / Medio / 
+Alto][Ej. Planificación
+de talleres 
+interactivos de 
+capacitación y 
+simplificación 
+extrema de 
+interfaces]
+... [Completar 
+mínimo 5 
+riesgos 
+analizados][...] [...] [Definir qué 
+acción concreta 
+se tomará ante 
+la contingencia]
+
+============================================================
+preguntas-de-relevamiento-e-historia-de-usuario.docx
+============================================================
+
+ ​ Cuestionario de Relevamiento de Requisitos ​ 1. Sobre el proceso actual ​ Pregunta: ¿Cómo se realiza el proceso de devolución y verificación del estado de la herramienta? ​ Respuesta: No es un control tan estricto. Sin embargo, lo de más valor sí se anota y se revisa que no tenga nada dañado al ser devuelto. ​ Pregunta: ¿Cómo se gestionan los préstamos que son para otro turno? ​ Respuesta: Hay que buscar la forma de comunicar los préstamos activos de un turno a otro. ​ Pregunta: ¿Qué áreas del establecimiento van a utilizar el sistema? ​ Respuesta: El área técnica y la biblioteca necesitan el sistema. El alcance quedaría solo para el colegio, no para la universidad. ​ 2. Sobre la estructura de datos ​ Pregunta: ¿Qué información es obligatoria registrar al momento de prestar un equipo? ​ Respuesta: El nombre y curso en el que estaba el alumno, y el nombre del docente. ​ Pregunta: ¿Cómo se debe registrar cuando un profesor se lleva varios objetos a la vez? ​ Respuesta: Para llevar en cantidad, se anota el profesor, la cantidad y la identificación de cada uno de los objetos. ​ 3. Sobre la identificación y el inventario ​ Pregunta: ¿Cómo identifican internamente cada herramienta o equipo? ​ Respuesta: Actualmente no tienen nada. Se necesita implementar una identificación con códigos de barras. ​ Pregunta: ¿Es necesario saber dónde están guardadas las cosas? ​ Respuesta: Sí, se necesita un inventario de todas las máquinas del colegio y organizarlas por lugar (dónde están). ​ Pregunta: ¿El sistema debe diferenciar de qué sector es cada cosa? ​ Respuesta: Sí, tiene que haber algo que marque que el objeto está en la biblioteca, por ejemplo. ​ 4. Sobre las reglas de negocio ​ Pregunta: ¿Existe un límite de cantidad de herramientas o equipos que una misma persona puede tener a préstamo simultáneamente? ​ Respuesta: No existe. ​ Pregunta: ¿Hay herramientas específicas que requieran autorización especial para ser prestadas a los alumnos? ​ Respuesta: No hay, pero se necesita la identificación de los profesores en el sistema para avalar a los alumnos que van a buscar algún objeto. ​ Pregunta: ¿Hay algún equipo que requiera un control distinto al resto? ​ Respuesta: Sí, se necesita una sección aparte para los proyectores, ya que es lo que más genera conflicto. ​ 5. Sobre las excepciones y problemas ​ Pregunta: ¿Qué procedimiento se sigue si un alumno o profesor devuelve una herramienta dañada? ​ Respuesta: Debería haber un registro en el sistema para saberlo. ​ Pregunta: ¿Qué sucede si llega el final del día o del turno y hay elementos que figuran como prestados pero no fueron devueltos? ​ Respuesta: Actualmente se busca manualmente dónde está. ​ 6. Sobre los reportes y la usabilidad ​ Pregunta: Al abrir el sistema al comienzo de tu jornada, ¿cuál es la información más urgente que necesitas ver en la pantalla principal? ​ Respuesta: Una pantalla que muestre la lista de préstamos activos. ​ Pregunta: ¿Necesitas generar algún tipo de reporte para presentar a los directivos? ​ Respuesta: Que se genere un botón que permita exportar los datos a Excel o PDF. ​ Historia de Usuario ​ Como encargado de biblioteca o área técnica, quiero ver una lista de los préstamos activos en la pantalla principal, para identificar rápidamente qué herramientas no fueron devueltas antes de finalizar mi turno. 
+
+============================================================
+Análisis Estratégico y Gestión de Riesgos.docx
+============================================================
+
+ Análisis Estratégico y Gestión de Riesgos Institución: Escuela Normal Superior Dalmacio Vélez Sarsfield Carrera: Tecnicatura Superior en Desarrollo de Software Asignaturas: Ingeniería del Software Proyecto: Sistema de control de prestaciones de área técnica 4.1 Matriz FODA Aplicada al Proyecto TI El siguiente análisis evalúa la viabilidad del proyecto, considerando tanto la capacidad técnica del equipo interno como el contexto y las condiciones del establecimiento educativo. Análisis Interno (Equipo y Producto) Análisis Externo (Contexto y Entorno) Fortalezas Acceso directo a usuarios: El equipo tiene contacto inmediato con los stakeholders principales (encargados, docentes) por pertenecer a la misma institución. Roles definidos: El equipo cuenta con una estructura multidisciplinaria clara para abarcar análisis, diseño, desarrollo y control de calidad. Conocimiento del problema: Comprensión profunda del proceso manual actual y sus deficiencias (pérdida de trazabilidad entre turnos). Oportunidades Digitalización institucional: Primer paso para modernizar los procesos de la escuela que actualmente funcionan en papel. Integración tecnológica: Posibilidad de incorporar escaneo de códigos de barras para agilizar entregas y recepciones. Escalabilidad: Un sistema exitoso en el área técnica y biblioteca puede ser adaptado posteriormente a otras áreas de la institución. Debilidades Presupuesto nulo: El proyecto depende enteramente de herramientas gratuitas, de código abierto o desarrollo propio, sin fondos para licencias de software o hardware adicional. Restricción temporal: Plazo estricto de desarrollo de 3 meses que limita la cantidad de funcionalidades (features) que se pueden incluir en la primera versión. Amenazas Resistencia al cambio: Riesgo de que los encargados del área técnica boicoteen el sistema y decidan continuar operando de forma verbal o en papel. Infraestructura de hardware: Fallos en la red del colegio o en la computadora de la biblioteca que impidan el acceso al sistema en momentos críticos de cambio de turno. 4.2 Matriz de Riesgos (Impacto / Probabilidad) Para garantizar el éxito y la continuidad del software, se han identificado los siguientes riesgos metodológicos y técnicos, evaluados según su probabilidad de ocurrencia y el nivel de impacto sobre el proyecto, junto con sus planes de mitigación. Riesgo Potencial Probabilidad Impacto Plan de Mitigación (Acción Preventiva / Reactiva) Boicot o rechazo por parte del usuario principal: El encargado de área técnica se niega a utilizar el software por considerarlo más lento que anotar en papel. Media Alto Mitigación: Involucrar activamente al usuario en el prototipado (UI/UX). Diseñar una interfaz minimalista, con un panel principal de acceso rápido, y asegurar que cargar un préstamo tome menos clics y tiempo que escribirlo a mano. Pérdida de datos e historial de préstamos: Falla del servidor local, corte de energía prolongado o corrupción de la base de datos que borre los préstamos activos. Baja Alto Mitigación: Configurar respaldos (backups) automáticos de la base de datos. Si la arquitectura lo permite, alojar el sistema en la nube o mantener un registro redundante exportable (HU09). Desviación del cronograma (Scope Creep): Retrasos en el desarrollo que impidan finalizar el sistema operativo en el plazo exigido de 3 meses. Media Medio Mitigación: Utilizar metodologías ágiles dividiendo el desarrollo en Sprints. Enfocarse estrictamente en construir primero el MVP (Producto Mínimo Viable) con las Épicas 1 y 2, dejando reportes complejos para el final. Fallo en la integración del lector de código de barras: Incompatibilidad de hardware o dificultad técnica para escanear las herramientas rápidamente. Media Medio Mitigación: Desarrollar el sistema con una funcionalidad de búsqueda predictiva (autocompletado por teclado) como método principal o de contingencia, asegurando que el sistema no dependa exclusivamente del escáner. Problemas de Accesibilidad y Usabilidad (WCAG): La interfaz resulta ilegible o cansadora para los usuarios durante turnos largos, dificultando la transición rápida. Baja Medio Mitigación: Aplicar estrictamente normas de alto contraste visual desde el diseño inicial. Implementar navegación completa por teclado (Tab, Enter) para no depender del mouse en la carga de formularios repetitivos. 
+
+============================================================
+Backlog de Requisitos.odt
+============================================================
+
+ Entregable Módulo 3: Ingeniería de Requisitos y Filosofía Ágil Institución: Escuela Normal Superior Dalmacio Vélez Sarsfield Carrera: Tecnicatura Superior en Desarrollo de Software Asignaturas: Programación III, Ingeniería del Software Docente: Prof. Juan Tortelli 1. Características de los Usuarios (Stakeholders) A partir del relevamiento cualitativo y cuantitativo realizado, se identifican los siguientes actores que interactuarán directa o indirectamente con el sistema de gestión de inventario: Encargados de Biblioteca y Área Técnica (Usuarios Principales): Son quienes operarán el sistema diariamente en el colegio. Su principal necesidad es mantener el control del inventario, gestionar las transacciones con agilidad y evitar la pérdida de información durante los cambios de turno. Docentes (Usuarios Secundarios / Facilitadores): Retiran equipos para sus clases (a menudo en cantidad). Además, actúan como responsables al avalar a los alumnos que retiran herramientas en su nombre. Alumnos (Usuarios Indirectos): Son los beneficiarios finales de muchas de las herramientas prestadas. Se requiere registrar su nombre y curso, bajo la autorización de un docente, sin que ellos operen el sistema de forma directa. Directivos (Patrocinadores / Consumidores de Información): No operan el sistema en el día a día, pero requieren visualizar reportes exportables sobre el uso y estado general del inventario del establecimiento. 2. Matriz de Poder-Interés Para priorizar los esfuerzos y la comunicación durante el desarrollo, los stakeholders se clasifican de la siguiente manera: Nivel de Interés Bajo Poder Alto Poder Alto Interés Mantener Informados: Docentes: Necesitan que el proceso de préstamo sea ágil para no perder tiempo de clase. Gestionar de Cerca: Encargados de Biblioteca y Área Técnica: El éxito del sistema depende de su adopción; sus requerimientos de usabilidad son críticos. Bajo Interés Monitorear: Alumnos: Solo interactúan tangencialmente al solicitar el préstamo de forma presencial. Mantener Satisfechos: Directivos: Requerirán reportes periódicos en formatos estándar para la toma de decisiones institucionales. 3. Backlog Inicial (Historias de Usuario) Este backlog traduce los hallazgos en requisitos funcionales y no funcionales, priorizados por el valor aportado a la gestión del inventario y redactados bajo la estructura ágil estándar. Épica 1: Gestión Diaria y Transacciones 1 - Panel de Préstamos Activos: Como encargado de biblioteca o área técnica, quiero ver una lista de los préstamos activos en la pantalla principal, para identificar rápidamente qué herramientas no fueron devueltas antes de finalizar mi turno. 2 - Préstamo Individual (Alumno): Como encargado, quiero registrar un préstamo ingresando el nombre del alumno, su curso y el docente que lo avala, para mantener la responsabilidad y trazabilidad de la herramienta entregada. 3 - Préstamo por Lote (Docentes): Como encargado, quiero asignar múltiples objetos simultáneamente a un docente registrado, especificando la cantidad y la identificación de cada objeto, para agilizar la entrega de materiales al inicio de una clase. 4 - Módulo Exclusivo de Proyectores: Como encargado, quiero gestionar las reservas y préstamos de los proyectores en una sección destacada e independiente dentro del sistema, para tener un control riguroso sobre estos equipos de alta criticidad y demanda. Épica 2: Control de Inventario e Identificación 5 - Identificación por Código de Barras: Como encargado, quiero poder escanear e identificar cada herramienta o equipo mediante códigos de barras, para que el proceso de registro de entrada y salida sea instantáneo y sin errores manuales. 6 - Ubicación y Sectorización: Como encargado, quiero visualizar en el sistema a qué sector (ej. biblioteca, área técnica) y ubicación física específica pertenece cada objeto, para saber exactamente de dónde sacarlo y dónde guardarlo tras su devolución. Épica 3: Seguimiento, Excepciones y Reportes 7 - Registro de Daños: Como encargado, quiero disponer de una opción para marcar un ítem como &quot;dañado&quot; al momento de registrar su devolución, para mantener un registro histórico y documentado de las roturas. 8 - Trazabilidad entre Turnos: Como encargado, quiero que el sistema refleje automáticamente el estado de los préstamos no devueltos al usuario del siguiente turno, para garantizar la continuidad del control sin depender de comunicación informal. 9 - Exportación de Reportes: Como directivo o encargado, quiero presionar un botón que permita exportar los datos de inventario y préstamos a formato Excel o PDF, para presentar informes de estado formales a las autoridades del colegio. Épica 4: Accesibilidad y Requisitos No Funcionales (RNF) 10 - Navegación Accesible y Ágil (WCAG): Como usuario del sistema, quiero poder navegar por todos los formularios de préstamo y devolución utilizando únicamente el teclado y contando con alto contraste visual, para garantizar la accesibilidad, mitigar la fatiga visual y acelerar la carga de datos en momentos de alta concurrencia. 
+
+============================================================
+roles_de_equipo.odt
+============================================================
+
+ Diseño de una técnica de recopilación de requisitos Contexto general Ustedes trabajarán en grupos de 4-5-6 personas para diseñar una estrategia de recopilación de requisitos aplicada a un proyecto real dentro del colegio. En esta etapa el coordinador designado de cada grupo subirá el material en esta actividad. Proyecto base (único para todos los grupos) “Pensar en un proyecto para el colegio DVS para digitalizar un proceso actual que funciona en papel o de forma verbal. El sistema puede ser usado por alumnos, profesores, preceptores, administrativos, técnicos o directivos. El presupuesto es nulo (desarrollo interno), el plazo es de 3 meses y se espera que los usuarios aprendan rápido sin capacitación extensa.” Cada grupo puede sugerir más de un proyecto, en etapas posteriores se decidirá que proyecto puede tener continuidad. Posibles proyectos (elijan uno como principal) Opción Proyecto Descripción A – B C D Proyectos posibles: Sistema de control de prestaciones de área técnica: Un sistema que permite controlar las cosas que se prestan dentro de dicha área (adaptadores, zapatillas, etc.). Sistema de gestión de reserva de espacion comunes: Permite organizar las reservas de por ejemplo el aula magna o el laboratorio. Roles dentro del grupo (asignar por sorteo o elección) Rol Responsabilidad Coordinador Modera la discusión y asegura que todos participen Analista de stakeholders Identifica y prioriza los involucrados en el proyecto Especialista en metodología Justifica la elección de la metodología base (cascada, espiral, XP, Scrum, Kanban, DevOps) Diseñador de técnicas Propone cómo recopilar requisitos para cada stakeholder Crítico (opcional, grupos de &gt; 5) Busca riesgos y puntos ciegos en la estrategia propuesta Coordinador: Aureliano Eichhorn Analista de stakeholders: Yanez Especialista en metodología: Nicolas Delfino Disenador de técnicas: Paulina Tumini Critico: Francisco Bruno Entregable grupal Completen la siguiente plantilla. Deben responder todas las preguntas de forma clara y justificada. Grupo N°: 2 Proyecto elegido: (A / B / C / D) – escribir nombre Sistema de control de prestaciones área tecnica Paso 1 – Stakeholders Lista de al menos 5 stakeholders reales dentro del colegio: -Encargados de área técnica -Profesores -Preseptores -Alumnos -Personal de la institucion Responder: ¿Cuál de estos stakeholders tiene más poder ? ¿Por qué? -El encargado de el area tecnica ya que es actualmente el que realiza las prestaciones de elementos y este software facilitaria a el su control. ¿Cuál tiene más interés en el éxito del proyecto? ¿Por qué? -El mismo encargado de el área técnica ya que es el que mas va a interactuar con el mismo ¿Hay algún stakeholder que pueda boicotear el proyecto? ¿Cuál y por qué? -Quien este encargado de el área y no quiera usar el software, si sigue usando la metodología clásica(verbal o en papel) el software seria inútil. Paso 2 – Metodología base (lo completarán en clase) (Acá iría el paso 2, que puedes incluir o dejar para la siguiente entrega) Paso 3 – Técnicas de recopilación (lo completarán en clase) Paso 4 – Riesgos y criterio de éxito (lo completarán en clase) Forma de entrega Tiempo estimado: 20 minutos para el Paso 1 (en clase) Formato: Hoja impresa o documento digital compartido con el profesor Entrega: Al final de la sesión de trabajo grupal Criterios mínimos de aprobación del Paso 1 Lista 5 stakeholders reales y diferenciados (no repite roles) Justifica correctamente quién tiene más poder Justifica correctamente quién tiene más interés Identifica al menos un posible saboteador y da una razón plausible 

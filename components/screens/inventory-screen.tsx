@@ -1,21 +1,36 @@
 "use client"
 
-import { useState } from "react"
-import { Search } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Plus, Search, X } from "lucide-react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { NativeSelect } from "@/components/native-select"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { formatDateTime, useStore } from "@/lib/store"
+import type { Sector } from "@/lib/types"
 
 export function InventoryScreen() {
-  const { items, damages } = useStore()
+  const { items, damages, addItem, user, teachers, addTeacher, removeTeacher } = useStore()
+  const [teacherForm, setTeacherForm] = useState("")
+  const [teacherError, setTeacherError] = useState<string | null>(null)
+  const [teacherQuery, setTeacherQuery] = useState("")
   const [query, setQuery] = useState("")
   const [sector, setSector] = useState("")
   const [status, setStatus] = useState("")
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: "", category: "", sector: "" as "" | Sector, location: "", code: "" })
+
+  const filteredTeachers = useMemo(() => {
+    const q = teacherQuery.trim().toLowerCase()
+    if (!q) return teachers
+    return teachers.filter((t) => t.toLowerCase().includes(q))
+  }, [teachers, teacherQuery])
 
   const filtered = items.filter((i) => {
     const q = query.trim().toLowerCase()
@@ -26,9 +41,156 @@ export function InventoryScreen() {
     )
   })
 
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const res = addItem({
+      name: form.name,
+      category: form.category,
+      sector: form.sector as Sector,
+      location: form.location,
+      code: form.code || undefined,
+    })
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
+    toast.success("Equipo agregado al inventario", { description: res.code ? `Código: ${res.code}` : undefined })
+    setForm({ name: "", category: "", sector: "", location: "", code: "" })
+    setShowForm(false)
+  }
+
+  function addNewTeacher(e: React.FormEvent) {
+    e.preventDefault()
+    setTeacherError(null)
+    const res = addTeacher(teacherForm)
+    if (!res.ok) {
+      setTeacherError(res.error)
+      return
+    }
+    toast.success("Docente agregado")
+    setTeacherForm("")
+  }
+
   return (
     <>
-      <PageHeader title="Inventario" description="Todos los equipos del Área Técnica y Biblioteca, con su estado actual." />
+      <PageHeader
+        title="Inventario"
+        description="Todos los equipos del Área Técnica y Biblioteca, con su estado actual."
+        actions={
+          user?.role === "encargado" ? (
+            <Button onClick={() => setShowForm((v) => !v)}>
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              Agregar equipo
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {showForm && user?.role === "encargado" && (
+        <Card>
+          <CardContent className="pt-6">
+            <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+                <Label htmlFor="inv-name">Nombre del equipo/herramienta</Label>
+                <Input id="inv-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="inv-cat">Categoría</Label>
+                <Input id="inv-cat" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} placeholder="Ej: Herramienta manual" required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="inv-sector">Sector</Label>
+                <NativeSelect id="inv-sector" value={form.sector} onChange={(e) => setForm((f) => ({ ...f, sector: e.target.value as Sector | "" }))} required>
+                  <option value="">Seleccionar</option>
+                  <option value="Área Técnica">Área Técnica</option>
+                  <option value="Biblioteca">Biblioteca</option>
+                </NativeSelect>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="inv-loc">Ubicación / Estante</Label>
+                <Input id="inv-loc" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Ej: Estante A1" required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="inv-code">Código (opcional)</Label>
+                <Input id="inv-code" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="Se genera automático si vacío" />
+              </div>
+              <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
+                <Button type="submit">Guardar</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {user?.role === "encargado" && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-base font-semibold">Docentes habilitados</p>
+                  <p className="text-sm text-muted-foreground">
+                    {filteredTeachers.length}
+                    {teacherQuery.trim() ? ` / ${teachers.length}` : ""} {teachers.length === 1 ? "docente" : "docentes"}
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">Se usan para préstamos a alumno, préstamos por lote y reservas de proyectores.</p>
+              </div>
+              <form onSubmit={addNewTeacher} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <Label htmlFor="teacher-name">Agregar docente</Label>
+                  <Input id="teacher-name" className="mt-1.5" placeholder="Ej: Prof. María López" value={teacherForm} onChange={(e) => setTeacherForm(e.target.value)} />
+                </div>
+                <Button type="submit">
+                  <Plus className="mr-1 size-4" aria-hidden="true" />
+                  Agregar
+                </Button>
+              </form>
+              {teacherError && <p className="text-sm text-destructive">{teacherError}</p>}
+              {teachers.length > 0 && (
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    placeholder="Buscar docente..."
+                    className="h-9 pl-8"
+                    value={teacherQuery}
+                    onChange={(e) => setTeacherQuery(e.target.value)}
+                  />
+                </div>
+              )}
+              {teachers.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">No hay docentes habilitados cargados.</p>
+              ) : filteredTeachers.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">No hay resultados para "{teacherQuery}".</p>
+              ) : (
+                <div className="max-h-[320px] overflow-y-auto rounded-md border">
+                  <div className="flex flex-wrap gap-2 p-3">
+                    {filteredTeachers.map((t) => (
+                      <div key={t} className="flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-sm shadow-sm">
+                        <span className="max-w-[200px] truncate">{t}</span>
+                        <button
+                          type="button"
+                          className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            removeTeacher(t)
+                            toast("Docente eliminado")
+                          }}
+                          aria-label={`Quitar ${t}`}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="equipos">
         <TabsList>

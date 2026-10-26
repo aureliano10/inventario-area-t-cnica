@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Undo2, UserPlus } from "lucide-react"
+import { AlertCircle, Undo2, UserPlus } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ItemScanner } from "@/components/item-scanner"
 import { ItemSummary } from "@/components/item-summary"
 import { PageHeader } from "@/components/page-header"
@@ -23,10 +24,10 @@ export function LookupScreen() {
     <>
       <PageHeader
         title="Consulta rápida"
-        description="Escaneá cualquier objeto para saber su estado, dónde está y quién lo tiene."
+        description="Escaneá cualquier código de barras para saber su ficha, ubicación, estado y si debería estar prestada."
       />
-      <Card>
-        <CardContent>
+      <Card className="overflow-visible">
+        <CardContent className="overflow-visible">
           <ItemScanner
             onScan={(i) => setCode(i.code)}
             demoCodes={["AT-0001", "AT-0003", "AT-0006", "BI-0002", "XX-9999"]}
@@ -34,26 +35,60 @@ export function LookupScreen() {
         </CardContent>
       </Card>
 
+      {code && !item && (
+        <Alert variant="destructive">
+          <AlertCircle aria-hidden="true" />
+          <AlertTitle>Código no encontrado</AlertTitle>
+          <AlertDescription>El código escaneado no existe en el inventario.</AlertDescription>
+        </Alert>
+      )}
+
       {item && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estado actual</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="overflow-visible">
+          <CardHeader>
+            <CardTitle>Ficha del equipo</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 overflow-visible">
               <ItemSummary item={item} />
+              <dl className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Código de barras</dt>
+                  <dd className="font-mono font-medium">{item.code}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Categoría</dt>
+                  <dd className="font-medium">{item.category}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Sector</dt>
+                  <dd className="font-medium">{item.sector}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Ubicación / Estante</dt>
+                  <dd className="font-medium">{item.location}</dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-muted-foreground">Estado actual</dt>
+                  <dd className="font-medium capitalize">{item.status}</dd>
+                </div>
+              </dl>
               {loan ? (
                 <dl className="grid grid-cols-2 gap-3 rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
-                  <div>
-                    <dt className="text-muted-foreground">Lo tiene</dt>
+                  <div className="col-span-2">
+                    <dt className="text-muted-foreground">Préstamo activo - Quién lo tiene</dt>
                     <dd className="font-medium">
                       {loan.borrowerName}
-                      {loan.course && ` (${loan.course})`}
+                      {loan.course && ` · Curso: ${loan.course}`}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Autorizó</dt>
                     <dd className="font-medium">{loan.authorizedBy ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Registrado por</dt>
+                    <dd className="font-medium">{loan.registeredBy || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Desde</dt>
@@ -63,17 +98,23 @@ export function LookupScreen() {
                     <dt className="text-muted-foreground">Turno</dt>
                     <dd className="font-medium">{loan.shift}</dd>
                   </div>
+                  <div className="col-span-2">
+                    <dt className="text-muted-foreground">Tipo</dt>
+                    <dd className="font-medium">{loan.borrowerType === "alumno" ? "Alumno" : loan.batchId ? `Docente (Lote ${loan.batchId})` : "Docente"}</dd>
+                  </div>
                 </dl>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {item.status === "disponible"
-                    ? `Está en ${item.location} y se puede prestar.`
-                    : "Está fuera de servicio por daño."}
+                    ? `Debería estar en ${item.location} (${item.sector}). Se puede prestar.`
+                    : item.status === "dañado"
+                      ? "Está fuera de servicio por daño. No se puede prestar."
+                      : `Está ${item.status}.`}
                 </p>
               )}
-              <div className="flex gap-2">
-                {item.status === "disponible" && (
-                  <Link href="/prestamos/alumno" className={buttonVariants()}>
+              <div className="flex flex-wrap gap-2">
+                {item.status === "disponible" && !loan && (
+                  <Link href={`/prestamos/alumno?code=${encodeURIComponent(item.code)}`} className={buttonVariants()}>
                     <UserPlus data-icon="inline-start" aria-hidden="true" />
                     Prestar
                   </Link>

@@ -10,13 +10,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { NativeSelect } from "@/components/native-select"
 import { PageHeader } from "@/components/page-header"
 import { useStore } from "@/lib/store"
-import { COURSES, SLOTS, TEACHERS, getWeekDays, toDateKey } from "@/lib/mock-data"
+import { COURSES, SLOTS, getWeekDays, toDateKey } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
 type Selection = { date: string; slot: number }
 
 export function ProjectorsScreen() {
-  const { items, reservations, reserveProjector, cancelReservation } = useStore()
+  const { items, reservations, reserveProjector, cancelReservation, teachers } = useStore()
   const projectors = items.filter((i) => i.category === "Proyector")
   const [projector, setProjector] = useState(projectors[0]?.code ?? "")
   const [weekOffset, setWeekOffset] = useState(0)
@@ -31,7 +31,8 @@ export function ProjectorsScreen() {
     return getWeekDays(ref)
   }, [weekOffset])
 
-  const todayKey = toDateKey(new Date())
+  const now = new Date()
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
   const findReservation = (date: string, slot: number) =>
     reservations.find((r) => r.projectorCode === projector && r.date === date && r.slot === slot)
 
@@ -41,6 +42,12 @@ export function ProjectorsScreen() {
   function confirm() {
     if (!selected) return
     if (!teacher || !course) return setError("Elegí el docente y el curso.")
+    // No permitir reservar en fechas pasadas
+    if (selected.date < todayKey) {
+      setError("No se pueden reservar horarios pasados.")
+      toast.error("No se pueden reservar horarios pasados.")
+      return
+    }
     const result = reserveProjector({ projectorCode: projector, date: selected.date, slot: selected.slot, teacher, course })
     if (!result.ok) {
       setError(result.error)
@@ -134,6 +141,11 @@ export function ProjectorsScreen() {
                           <button
                             type="button"
                             onClick={() => {
+                              if (date < todayKey && !res) {
+                                setSelected({ date, slot })
+                                setError("No se pueden reservar horarios pasados.")
+                                return
+                              }
                               setSelected({ date, slot })
                               setError(res ? "Ese horario ya está ocupado. Elegí otro." : null)
                             }}
@@ -206,33 +218,41 @@ export function ProjectorsScreen() {
 
             {selected && !selectedReservation && (
               <>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="res-teacher">Docente</Label>
+                {selected.date < todayKey ? (
+                  <Alert variant="destructive" role="alert">
+                    <AlertDescription>No se pueden reservar horarios pasados.</AlertDescription>
+                  </Alert>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="res-teacher">Docente</Label>
                   <NativeSelect id="res-teacher" value={teacher} onChange={(e) => setTeacher(e.target.value)}>
                     <option value="">Elegí un docente</option>
-                    {TEACHERS.map((t) => (
+                    {(teachers || []).map((t) => (
                       <option key={t}>{t}</option>
                     ))}
                   </NativeSelect>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="res-course">Curso</Label>
-                  <NativeSelect id="res-course" value={course} onChange={(e) => setCourse(e.target.value)}>
-                    <option value="">Elegí un curso</option>
-                    {COURSES.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </NativeSelect>
-                </div>
-                {error && (
-                  <Alert variant="destructive" role="alert">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="res-course">Curso</Label>
+                      <NativeSelect id="res-course" value={course} onChange={(e) => setCourse(e.target.value)}>
+                        <option value="">Elegí un curso</option>
+                        {COURSES.map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </NativeSelect>
+                    </div>
+                    {error && (
+                      <Alert variant="destructive" role="alert">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button size="lg" className="h-11" onClick={confirm}>
+                      <CalendarCheck data-icon="inline-start" aria-hidden="true" />
+                      Reservar
+                    </Button>
+                  </>
                 )}
-                <Button size="lg" className="h-11" onClick={confirm}>
-                  <CalendarCheck data-icon="inline-start" aria-hidden="true" />
-                  Reservar
-                </Button>
               </>
             )}
           </CardContent>
