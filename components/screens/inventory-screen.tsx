@@ -76,7 +76,7 @@ export function InventoryScreen() {
     <>
       <PageHeader
         title="Inventario"
-        description="Todos los equipos del Área Técnica y Biblioteca, con su estado actual."
+        description="Listado de equipos, estado actual y gestión de docentes habilitados."
         actions={
           user?.role === "encargado" ? (
             <Button onClick={() => setShowForm((v) => !v)}>

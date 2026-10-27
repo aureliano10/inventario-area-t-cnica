@@ -144,7 +144,7 @@ export function ReportsScreen() {
       <div className="no-print">
         <PageHeader
           title="Reportes"
-          description="Generá listados para la dirección y exportalos a Excel o PDF."
+          description="Listados para dirección. Exportá a CSV o imprimí a PDF."
           actions={
             <>
               <Button variant="outline" onClick={exportExcel} disabled={rows.length === 0}>

@@ -170,7 +170,7 @@ export function ReturnScreen() {
 
   return (
     <>
-      <PageHeader title="Registrar devolución" description="Seleccioná el préstamo y marcá cada ítem devuelto." />
+      <PageHeader title="Devoluciones" description="Seleccioná el préstamo activo y devolvé ítem por ítem o todo el grupo." />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

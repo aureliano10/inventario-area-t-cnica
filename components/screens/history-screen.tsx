@@ -46,8 +46,8 @@ export function HistoryScreen() {
   return (
     <>
       <PageHeader
-        title="Historial de préstamos"
-        description="Todos los préstamos realizados: activos, devueltos y su estado al devolver."
+        title="Historial"
+        description="Todos los préstamos con fecha, responsable, estado y condición al devolver."
       />
 
       <Card>

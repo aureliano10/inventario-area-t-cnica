@@ -24,7 +24,7 @@ export function LookupScreen() {
     <>
       <PageHeader
         title="Consulta rápida"
-        description="Escaneá cualquier código de barras para saber su ficha, ubicación, estado y si debería estar prestada."
+        description="Escaneá o buscá un ítem para ver ficha, estado, préstamo activo e historial."
       />
       <Card className="overflow-visible">
         <CardContent className="overflow-visible">

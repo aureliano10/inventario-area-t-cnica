@@ -64,8 +64,8 @@ export function ProjectorsScreen() {
   return (
     <>
       <PageHeader
-        title="Reserva de proyectores"
-        description="Elegí un proyector y un horario libre para reservarlo a un docente."
+        title="Reservas de proyectores"
+        description="Reservá un proyector por fecha, horario, docente y curso."
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">

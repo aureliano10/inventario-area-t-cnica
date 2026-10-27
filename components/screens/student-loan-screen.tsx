@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Check, ChevronDown, PackageOpen, Search, X } from "lucide-react"
+import { Check, ChevronDown, Clock, PackageOpen, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,11 +24,14 @@ const LOGIN_LABELS: Record<string, string> = {
   directora: "Directivo",
 }
 
+type RecentLoan = { student: string; course: string; teacher: string }
+
 function StudentLoanInner() {
   const { lendToStudent, user, items, teachers } = useStore()
   const searchParams = useSearchParams()
   const scannerRef = useRef<HTMLInputElement>(null)
   const studentRef = useRef<HTMLInputElement>(null)
+  const queryRef = useRef<HTMLInputElement>(null)
   const [selected, setSelected] = useState<Item[]>([])
   const [student, setStudent] = useState("")
   const [course, setCourse] = useState("")
@@ -38,6 +41,15 @@ function StudentLoanInner() {
   const [query, setQuery] = useState("")
   const [showScanner, setShowScanner] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [recent, setRecent] = useState<RecentLoan[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      const raw = localStorage.getItem("at-recent-simple-loans")
+      return raw ? (JSON.parse(raw) as RecentLoan[]) : []
+    } catch {
+      return []
+    }
+  })
 
   useEffect(() => {
     const code = searchParams.get("code")
@@ -89,22 +101,37 @@ function StudentLoanInner() {
     setError(null)
     setSelected((prev) => [...prev, i])
     setQuery("")
-    if (selected.length === 0) setTimeout(() => studentRef.current?.focus(), 0)
+    setActiveIndex(-1)
+    setTimeout(() => queryRef.current?.focus(), 0)
   }
 
   function removeItem(code: string) {
     setSelected((prev) => prev.filter((s) => s.code !== code))
   }
 
+  function applyRecent(r: RecentLoan) {
+    setStudent(r.student)
+    setCourse(r.course)
+    setTeacher(r.teacher)
+    setError(null)
+    setTimeout(() => queryRef.current?.focus(), 0)
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
-    if (selected.length === 0) return setError("Seleccioná al menos una herramienta.")
-    if (!student.trim()) return setError("Ingresá el nombre y apellido de quien se lleva las herramientas.")
+    if (selected.length === 0) return setError("Seleccioná al menos un ítem.")
+    if (!student.trim()) return setError("Ingresá el nombre y apellido de quien retira.")
     const result = lendToStudent({ itemCodes: selected.map((s) => s.code), studentName: student.trim(), course, teacher })
     if (!result.ok) return setError(result.error)
-    toast.success("Préstamo registrado", {
-      description: `${selected.length} ${selected.length === 1 ? "herramienta" : "herramientas"} · ${student.trim()}${course ? ` (${course})` : ""}`,
+    const entry: RecentLoan = { student: student.trim(), course, teacher }
+    const next = [entry, ...recent.filter((r) => !(r.student === entry.student && r.course === entry.course && r.teacher === entry.teacher))].slice(0, 5)
+    setRecent(next)
+    try {
+      localStorage.setItem("at-recent-simple-loans", JSON.stringify(next))
+    } catch {}
+    toast.success("Préstamo simple registrado", {
+      description: `${selected.length} ${selected.length === 1 ? "ítem" : "ítems"} a ${student.trim()}${course ? ` (${course})` : ""}`,
     })
     reset()
   }
@@ -112,24 +139,25 @@ function StudentLoanInner() {
   return (
     <>
       <PageHeader
-        title="Nuevo préstamo"
-        description="Cargá los datos de quien retira y agregá todas las herramientas que se lleva."
+        title="Préstamo simple"
+        description="Entrega puntual. Buscá por nombre el ítem y agregalo. Escaneo opcional."
       />
-      <form onSubmit={handleSubmit} noValidate className="grid gap-6 lg:grid-cols-5">
+      <form id="loan-simple-form" onSubmit={handleSubmit} noValidate className="grid gap-6 pb-24 lg:grid-cols-5 lg:pb-0">
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>1. Herramientas a prestar</CardTitle>
-            <CardDescription>Podés agregar una o varias por nombre o escaneo.</CardDescription>
+            <CardTitle>1. Ítems a prestar</CardTitle>
+            <CardDescription>Buscá manualmente por nombre o categoría. Agregá uno o varios ítems distintos.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="item-search">Buscar por nombre o código</Label>
+              <Label htmlFor="item-search">Buscar ítem</Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  ref={queryRef}
                   id="item-search"
-                  className="h-10 pl-8"
-                  placeholder="Ej: Alargue, Zapatilla, Cable HDMI..."
+                  className="h-11 pl-8 text-base"
+                  placeholder="Escribí nombre, categoría o código..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   autoComplete="off"
@@ -178,8 +206,8 @@ function StudentLoanInner() {
             </div>
 
             <div className="rounded-lg border">
-              <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-muted" onClick={() => setShowScanner((v) => !v)}>
-                <span>¿Tiene código de barras? Escanear (opcional)</span>
+              <button type="button" className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted" onClick={() => setShowScanner((v) => !v)}>
+                <span className="font-medium">Código de barras (opcional)</span>
                 <ChevronDown className={cn("size-4 transition-transform", showScanner && "rotate-180")} aria-hidden="true" />
               </button>
               {showScanner && (
@@ -191,13 +219,13 @@ function StudentLoanInner() {
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium">Lista ({selected.length})</p>
+                <p className="text-sm font-semibold">A prestar ({selected.length})</p>
                 {selected.length > 0 && <Button type="button" variant="ghost" size="sm" onClick={() => setSelected([])}>Vaciar</Button>}
               </div>
               {selected.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center text-muted-foreground">
                   <PackageOpen className="size-8" aria-hidden="true" />
-                  <p>Agregá al menos una herramienta para prestar.</p>
+                  <p>Buscá un ítem y agregalo desde la lista.</p>
                 </div>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -217,13 +245,34 @@ function StudentLoanInner() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>2. Datos de quien retira</CardTitle>
-            <CardDescription>Registrado por {user?.username ? LOGIN_LABELS[user.username] || user?.name : user?.name} · Turno {user?.shift}</CardDescription>
+            <CardTitle>2. Quién retira</CardTitle>
+            <CardDescription>Solo nombre y apellido son obligatorios.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
+            {recent.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="size-4 text-muted-foreground" />
+                  Últimos retirados
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {recent.map((r, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => applyRecent(r)}
+                      className="rounded-full border px-2.5 py-1 text-sm hover:bg-muted"
+                    >
+                      {r.student}
+                      {r.course ? ` · ${r.course}` : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="student">Nombre y apellido *</Label>
-              <Input ref={studentRef} id="student" className="h-10" value={student} aria-invalid={submitted && !student.trim()} onChange={(e) => setStudent(e.target.value)} placeholder="Quién se lleva las herramientas" />
+              <Input ref={studentRef} id="student" className="h-10" value={student} aria-invalid={submitted && !student.trim()} onChange={(e) => setStudent(e.target.value)} placeholder="Quién se lleva los ítems" />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="course">Curso (opcional)</Label>
@@ -242,16 +291,28 @@ function StudentLoanInner() {
 
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-            <div className="flex gap-2">
+            <div className="hidden gap-2 lg:flex">
               <Button type="submit" size="lg" className="h-11 flex-1" disabled={selected.length === 0}>
                 <Check data-icon="inline-start" aria-hidden="true" />
-                Confirmar préstamo ({selected.length})
+                Registrar préstamo ({selected.length})
               </Button>
               <Button type="button" variant="outline" size="lg" className="h-11" onClick={reset}>Limpiar</Button>
             </div>
           </CardContent>
         </Card>
       </form>
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 p-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-6xl items-center gap-2">
+          <div className="flex-1 text-sm">
+            <span className="font-semibold">{selected.length}</span> {selected.length === 1 ? "ítem" : "ítems"} seleccionado{selected.length === 1 ? "" : "s"}
+          </div>
+          <Button type="submit" form="loan-simple-form" className="h-10" disabled={selected.length === 0}>
+            <Check className="mr-1 size-4" />
+            Registrar
+          </Button>
+        </div>
+      </div>
     </>
   )
 }
