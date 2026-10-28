@@ -21,6 +21,7 @@ interface StoreValue {
   lendBatch: (input: { teacher: string; itemCodes: string[] }) => Result
   registerReturn: (input: { itemCode: string; condition: "bueno" | "dañado"; description?: string }) => Result
   reserveProjector: (input: Omit<Reservation, "id">) => Result
+  reserveProjectorMany: (input: { projectorCode: string; slots: Array<{ date: string; slot: number }>; teacher: string; course: string }) => Result
   cancelReservation: (id: string) => void
   addItem: (input: {
     name: string
@@ -191,6 +192,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
         if (taken) return { ok: false, error: "Ese horario ya está ocupado. Elegí otro." }
         setReservations((prev) => [...prev, { ...input, teacher: input.teacher.trim(), course: input.course.trim(), id: nextId("R") }])
+        return { ok: true }
+      },
+      reserveProjectorMany({ projectorCode, slots, teacher, course }) {
+        if (!teacher?.trim()) return { ok: false, error: "Elegí el docente." }
+        if (!course?.trim()) return { ok: false, error: "Elegí el curso." }
+        if (!slots || slots.length === 0) return { ok: false, error: "Seleccioná al menos un bloque horario." }
+        const d = new Date()
+        const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        for (const s of slots) {
+          if (s.date < todayKey) return { ok: false, error: "No se pueden reservar horarios pasados." }
+          const taken = reservations.some((r) => r.projectorCode === projectorCode && r.date === s.date && r.slot === s.slot)
+          if (taken) return { ok: false, error: "Uno de los horarios seleccionados ya está ocupado." }
+        }
+        const t = teacher.trim()
+        const c = course.trim()
+        setReservations((prev) => [
+          ...slots.map((s) => ({ id: nextId("R"), projectorCode, date: s.date, slot: s.slot, teacher: t, course: c })),
+          ...prev,
+        ])
         return { ok: true }
       },
       cancelReservation(id) {

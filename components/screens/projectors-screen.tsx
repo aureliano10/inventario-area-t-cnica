@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { CalendarCheck, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { CalendarCheck, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,11 +16,12 @@ import { cn } from "@/lib/utils"
 type Selection = { date: string; slot: number }
 
 export function ProjectorsScreen() {
-  const { items, reservations, reserveProjector, cancelReservation, teachers } = useStore()
+  const { items, reservations, reserveProjectorMany, cancelReservation, teachers } = useStore()
   const projectors = items.filter((i) => i.category === "Proyector")
   const [projector, setProjector] = useState(projectors[0]?.code ?? "")
   const [weekOffset, setWeekOffset] = useState(0)
-  const [selected, setSelected] = useState<Selection | null>(null)
+  const [selectedSlots, setSelectedSlots] = useState<Selection[]>([])
+  const [viewingReservation, setViewingReservation] = useState<Selection | null>(null)
   const [teacher, setTeacher] = useState("")
   const [course, setCourse] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -36,26 +37,71 @@ export function ProjectorsScreen() {
   const findReservation = (date: string, slot: number) =>
     reservations.find((r) => r.projectorCode === projector && r.date === date && r.slot === slot)
 
-  const selectedReservation = selected ? findReservation(selected.date, selected.slot) : undefined
-  const selectedDay = selected ? days.find((d) => toDateKey(d) === selected.date) : undefined
+  const viewingReservationData = viewingReservation ? findReservation(viewingReservation.date, viewingReservation.slot) : undefined
+  const viewingDay = viewingReservation ? days.find((d) => toDateKey(d) === viewingReservation.date) : undefined
 
-  function confirm() {
-    if (!selected) return
-    if (!teacher || !course) return setError("Elegí el docente y el curso.")
-    // No permitir reservar en fechas pasadas
-    if (selected.date < todayKey) {
+  const selectedGrouped = useMemo(() => {
+    const map = new Map<string, number[]>()
+    for (const s of selectedSlots) {
+      if (!map.has(s.date)) map.set(s.date, [])
+      map.get(s.date)!.push(s.slot)
+    }
+    const entries = Array.from(map.entries())
+    entries.sort(([a], [b]) => a.localeCompare(b))
+    for (const [, slots] of entries) slots.sort((a, b) => a - b)
+    return entries
+  }, [selectedSlots])
+
+  function toggleSlot(date: string, slot: number) {
+    if (date < todayKey) {
+      setViewingReservation({ date, slot })
       setError("No se pueden reservar horarios pasados.")
-      toast.error("No se pueden reservar horarios pasados.")
       return
     }
-    const result = reserveProjector({ projectorCode: projector, date: selected.date, slot: selected.slot, teacher, course })
+    const res = findReservation(date, slot)
+    if (res) {
+      setViewingReservation({ date, slot })
+      setError("Ese horario ya está ocupado.")
+      return
+    }
+    setViewingReservation(null)
+    setError(null)
+    setSelectedSlots((prev) => {
+      const exists = prev.some((s) => s.date === date && s.slot === slot)
+      if (exists) return prev.filter((s) => !(s.date === date && s.slot === slot))
+      return [...prev, { date, slot }]
+    })
+  }
+
+  function clearSelection() {
+    setSelectedSlots([])
+    setError(null)
+  }
+
+  function confirm() {
+    if (selectedSlots.length === 0) return
+    if (!teacher || !course) return setError("Elegí el docente y el curso.")
+    for (const s of selectedSlots) {
+      if (s.date < todayKey) {
+        setError("No se pueden reservar horarios pasados.")
+        return
+      }
+      if (findReservation(s.date, s.slot)) {
+        setError("Uno de los horarios seleccionados ya está ocupado.")
+        return
+      }
+    }
+    const result = reserveProjectorMany({ projectorCode: projector, slots: selectedSlots, teacher, course })
     if (!result.ok) {
       setError(result.error)
       toast.error(result.error)
       return
     }
-    toast.success("Proyector reservado", { description: `${teacher} · ${SLOTS[selected.slot]}` })
-    setSelected(null)
+    toast.success(selectedSlots.length === 1 ? "Proyector reservado" : "Proyectores reservados", {
+      description: `${teacher} · ${selectedSlots.length} ${selectedSlots.length === 1 ? "bloque" : "bloques"}`,
+    })
+    setSelectedSlots([])
+    setViewingReservation(null)
     setTeacher("")
     setCourse("")
     setError(null)
@@ -77,9 +123,11 @@ export function ProjectorsScreen() {
                 id="projector"
                 value={projector}
                 onChange={(e) => {
-                  setProjector(e.target.value)
-                  setSelected(null)
-                }}
+                setProjector(e.target.value)
+                setSelectedSlots([])
+                setViewingReservation(null)
+                setError(null)
+              }}
               >
                 {projectors.map((p) => (
                   <option key={p.code} value={p.code}>
@@ -135,27 +183,21 @@ export function ProjectorsScreen() {
                     {days.map((d) => {
                       const date = toDateKey(d)
                       const res = findReservation(date, slot)
-                      const isSelected = selected?.date === date && selected.slot === slot
+                      const isSelected = selectedSlots.some((s) => s.date === date && s.slot === slot)
                       return (
                         <td key={date} className="p-0">
                           <button
                             type="button"
-                            onClick={() => {
-                              if (date < todayKey && !res) {
-                                setSelected({ date, slot })
-                                setError("No se pueden reservar horarios pasados.")
-                                return
-                              }
-                              setSelected({ date, slot })
-                              setError(res ? "Ese horario ya está ocupado. Elegí otro." : null)
-                            }}
+                            onClick={() => toggleSlot(date, slot)}
                             aria-pressed={isSelected}
-                            aria-label={`${d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric" })}, ${slotLabel}: ${res ? `ocupado por ${res.teacher}` : "libre"}`}
+                            aria-label={`${d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric" })}, ${slotLabel}: ${res ? `ocupado por ${res.teacher}` : isSelected ? "seleccionado para reservar" : "libre"}`}
                             className={cn(
                               "flex h-14 w-full flex-col items-start justify-center rounded-md border px-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
                               res
                                 ? "border-destructive/25 bg-destructive/8 text-destructive"
-                                : "border-success/30 bg-success/8 text-success hover:bg-success/15",
+                                : isSelected
+                                  ? "border-primary bg-primary/10 text-primary hover:bg-primary/15"
+                                  : "border-success/30 bg-success/8 text-success hover:bg-success/15",
                               isSelected && "ring-2 ring-primary ring-offset-1",
                             )}
                           >
@@ -180,78 +222,120 @@ export function ProjectorsScreen() {
 
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle>Detalle de la reserva</CardTitle>
+            <CardTitle>Reserva de proyectores</CardTitle>
             <CardDescription>
-              {selected && selectedDay
-                ? `${selectedDay.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })} · ${SLOTS[selected.slot]}`
-                : "Tocá un horario de la grilla."}
+              {selectedSlots.length > 0
+                ? `${selectedSlots.length} ${selectedSlots.length === 1 ? "bloque seleccionado" : "bloques seleccionados"}`
+                : viewingReservation && viewingDay
+                  ? `${viewingDay.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })} · ${SLOTS[viewingReservation.slot]}`
+                  : "Seleccioná uno o varios horarios libres."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {!selected && (
+            {selectedSlots.length === 0 && !viewingReservation && (
               <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
                 <CalendarCheck className="size-8" aria-hidden="true" />
-                Verde = libre · Rojo = ocupado
+                <p>Verde = libre · Azul = seleccionado · Rojo = ocupado</p>
+                <p>Podés seleccionar varios bloques a la vez.</p>
               </div>
             )}
 
-            {selected && selectedReservation && (
+            {selectedSlots.length > 0 && (
               <>
-                <Alert variant="destructive" role="alert">
-                  <AlertDescription>
-                    Ocupado por {selectedReservation.teacher} ({selectedReservation.course}). Elegí otro horario.
-                  </AlertDescription>
-                </Alert>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    cancelReservation(selectedReservation.id)
-                    setError(null)
-                    toast("Reserva liberada")
-                  }}
-                >
-                  <Trash2 data-icon="inline-start" aria-hidden="true" />
-                  Liberar este horario
-                </Button>
-              </>
-            )}
-
-            {selected && !selectedReservation && (
-              <>
-                {selected.date < todayKey ? (
-                  <Alert variant="destructive" role="alert">
-                    <AlertDescription>No se pueden reservar horarios pasados.</AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="res-teacher">Docente</Label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Bloques a reservar</p>
+                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                      <X className="mr-2 size-4" aria-hidden="true" />
+                      Limpiar
+                    </Button>
+                  </div>
+                  <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-lg border">
+                    {selectedGrouped.map(([dateKey, slots]) => {
+                      const day = days.find((d) => toDateKey(d) === dateKey)
+                      return (
+                        <div key={dateKey} className="flex flex-col gap-1 px-3 py-2">
+                          <p className="text-sm font-medium capitalize">{day ? day.toLocaleDateString("es-AR", { weekday: "long", day: "2-digit", month: "2-digit" }) : dateKey}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {slots.map((s) => (
+                              <button
+                                key={`${dateKey}-${s}`}
+                                type="button"
+                                onClick={() => toggleSlot(dateKey, s)}
+                                className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                {SLOTS[s]}
+                                <X className="size-3" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="res-teacher">Docente</Label>
                   <NativeSelect id="res-teacher" value={teacher} onChange={(e) => setTeacher(e.target.value)}>
                     <option value="">Elegí un docente</option>
                     {(teachers || []).map((t) => (
                       <option key={t}>{t}</option>
                     ))}
                   </NativeSelect>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="res-course">Curso</Label>
-                      <NativeSelect id="res-course" value={course} onChange={(e) => setCourse(e.target.value)}>
-                        <option value="">Elegí un curso</option>
-                        {COURSES.map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </NativeSelect>
-                    </div>
-                    {error && (
-                      <Alert variant="destructive" role="alert">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                    <Button size="lg" className="h-11" onClick={confirm}>
-                      <CalendarCheck data-icon="inline-start" aria-hidden="true" />
-                      Reservar
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="res-course">Curso</Label>
+                  <NativeSelect id="res-course" value={course} onChange={(e) => setCourse(e.target.value)}>
+                    <option value="">Elegí un curso</option>
+                    {COURSES.map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                {error && (
+                  <Alert variant="destructive" role="alert">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <Button size="lg" className="h-11" onClick={confirm} disabled={!teacher || !course}>
+                  <CalendarCheck data-icon="inline-start" aria-hidden="true" />
+                  Reservar {selectedSlots.length} {selectedSlots.length === 1 ? "bloque" : "bloques"}
+                </Button>
+              </>
+            )}
+
+            {selectedSlots.length === 0 && viewingReservation && (
+              <>
+                {viewingReservation.date < todayKey ? (
+                  <Alert variant="destructive" role="alert">
+                    <AlertDescription>No se pueden reservar horarios pasados.</AlertDescription>
+                  </Alert>
+                ) : viewingReservationData ? (
+                  <>
+                    <Alert variant="destructive" role="alert">
+                      <AlertDescription>
+                        Ocupado por {viewingReservationData.teacher} ({viewingReservationData.course})
+                      </AlertDescription>
+                    </Alert>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        cancelReservation(viewingReservationData.id)
+                        setError(null)
+                        toast("Reserva liberada")
+                      }}
+                    >
+                      <Trash2 data-icon="inline-start" aria-hidden="true" />
+                      Liberar este horario
                     </Button>
                   </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
+                    <p>Este horario está libre.</p>
+                    <Button size="sm" onClick={() => toggleSlot(viewingReservation.date, viewingReservation.slot)}>
+                      Agregar a la selección
+                    </Button>
+                  </div>
                 )}
               </>
             )}
