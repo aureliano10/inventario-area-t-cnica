@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,6 +12,8 @@ import { formatDateTime, useStore } from "@/lib/store"
 export function HistoryScreen() {
   const { loans, items } = useStore()
   const [query, setQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"todos" | "activos" | "devueltos">("todos")
+  const [typeFilter, setTypeFilter] = useState<"todos" | "alumnos" | "docentes">("todos")
 
   const itemName = (code: string) => items.find((i) => i.code === code)?.name ?? code
   const itemSector = (code: string) => items.find((i) => i.code === code)?.sector ?? ""
@@ -18,6 +21,10 @@ export function HistoryScreen() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     let list = [...loans].sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+    if (statusFilter === "activos") list = list.filter((l) => !l.returnedAt)
+    if (statusFilter === "devueltos") list = list.filter((l) => !!l.returnedAt)
+    if (typeFilter === "alumnos") list = list.filter((l) => l.borrowerType === "alumno")
+    if (typeFilter === "docentes") list = list.filter((l) => l.borrowerType === "docente")
     if (q) {
       list = list.filter((l) => {
         const it = items.find((i) => i.code === l.itemCode)
@@ -41,7 +48,7 @@ export function HistoryScreen() {
         sector: it?.sector ?? itemSector(l.itemCode),
       }
     })
-  }, [loans, items, query])
+  }, [loans, items, query, statusFilter, typeFilter])
 
   return (
     <>
@@ -51,16 +58,27 @@ export function HistoryScreen() {
       />
 
       <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Registro completo</CardTitle>
-          <div className="relative w-full sm:w-80">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              placeholder="Buscar por alumno, docente, lote, código, equipo..."
-              className="h-9 pl-8"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        <CardHeader className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>Registro completo</CardTitle>
+            <div className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                placeholder="Buscar por alumno, docente, lote, código, equipo..."
+                className="h-9 pl-8"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant={statusFilter === "todos" ? "default" : "outline"} onClick={() => setStatusFilter("todos")}>Todos</Button>
+            <Button size="sm" variant={statusFilter === "activos" ? "default" : "outline"} onClick={() => setStatusFilter("activos")}>Activos</Button>
+            <Button size="sm" variant={statusFilter === "devueltos" ? "default" : "outline"} onClick={() => setStatusFilter("devueltos")}>Devueltos</Button>
+            <div className="mx-1 h-4 w-px bg-border" />
+            <Button size="sm" variant={typeFilter === "todos" ? "default" : "outline"} onClick={() => setTypeFilter("todos")}>Todos los tipos</Button>
+            <Button size="sm" variant={typeFilter === "alumnos" ? "default" : "outline"} onClick={() => setTypeFilter("alumnos")}>Alumnos</Button>
+            <Button size="sm" variant={typeFilter === "docentes" ? "default" : "outline"} onClick={() => setTypeFilter("docentes")}>Docentes</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -98,10 +116,10 @@ export function HistoryScreen() {
                   <TableCell>
                     {loan.returnedAt ? (
                       <span className={loan.returnedCondition === "dañado" ? "text-destructive" : "text-success"}>
-                        {loan.returnedCondition === "dañado" ? "Dañado al devolver" : "Buen estado"}
+                        {loan.returnedCondition === "dañado" ? "Devuelto - Dañado" : "Devuelto - Buen estado"}
                       </span>
                     ) : (
-                      <span className="text-warning-foreground">Prestado</span>
+                      <span className="text-amber-700 dark:text-amber-400">Prestado</span>
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{loan.registeredBy} · {loan.shift}</TableCell>
@@ -111,7 +129,7 @@ export function HistoryScreen() {
               {rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                    No hay préstamos registrados.
+                    No hay préstamos con esos filtros.
                   </TableCell>
                 </TableRow>
               )}

@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { AlertCircle, Undo2, UserPlus } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
+import { AlertCircle, Search, Undo2, UserPlus } from "lucide-react"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ItemScanner } from "@/components/item-scanner"
 import { ItemSummary } from "@/components/item-summary"
@@ -15,10 +17,18 @@ import type { Item } from "@/lib/types"
 export function LookupScreen() {
   const { loans, damages, activeLoanFor, findItem } = useStore()
   const [code, setCode] = useState<string | null>(null)
+  const [manualCode, setManualCode] = useState("")
   const item: Item | undefined = code ? findItem(code) : undefined
   const loan = item ? activeLoanFor(item.code) : undefined
   const history = item ? loans.filter((l) => l.itemCode === item.code && l.returnedAt) : []
   const itemDamages = item ? damages.filter((d) => d.itemCode === item.code) : []
+
+  function searchManual(e: React.FormEvent) {
+    e.preventDefault()
+    const c = manualCode.trim()
+    if (!c) return
+    setCode(c.toUpperCase())
+  }
 
   return (
     <>
@@ -27,11 +37,23 @@ export function LookupScreen() {
         description="Escaneá o buscá un ítem para ver ficha, estado, préstamo activo e historial."
       />
       <Card className="overflow-visible">
-        <CardContent className="overflow-visible">
-          <ItemScanner
-            onScan={(i) => setCode(i.code)}
-            demoCodes={["AT-0001", "AT-0003", "AT-0006", "BI-0002", "XX-9999"]}
-          />
+        <CardContent className="flex flex-col gap-4 overflow-visible pt-6">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="lookup-manual">Buscar por código</Label>
+            <form onSubmit={searchManual} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input id="lookup-manual" className="pl-8" placeholder="Ej. AT-0001, NB-05" value={manualCode} onChange={(e) => setManualCode(e.target.value.toUpperCase())} />
+              </div>
+              <Button type="submit">Buscar</Button>
+            </form>
+          </div>
+          <div className="border-t pt-4">
+            <ItemScanner
+              onScan={(i) => { setCode(i.code); setManualCode(i.code); }}
+              demoCodes={["AT-0001", "AT-0003", "AT-0006", "BI-0002", "NB-01"]}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -131,33 +153,49 @@ export function LookupScreen() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Historial</CardTitle>
+              <CardTitle>Historial del equipo</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
+            <CardContent className="flex flex-col gap-4 text-sm">
               {history.length === 0 && itemDamages.length === 0 && (
                 <p className="text-muted-foreground">Sin movimientos anteriores.</p>
               )}
-              <ul className="flex flex-col gap-2">
-                {itemDamages.map((d) => (
-                  <li key={d.id} className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                    <p className="font-medium text-destructive">Daño · {formatDateTime(d.date)}</p>
-                    <p>{d.description}</p>
-                    <p className="text-xs text-muted-foreground">Responsable: {d.responsible}</p>
-                  </li>
-                ))}
-                {history.map((h) => (
-                  <li key={h.id} className="rounded-md border p-3">
-                    <p className="font-medium">
-                      {h.borrowerName}
-                      {h.course && ` (${h.course})`}
-                    </p>
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {formatDateTime(h.startedAt)} → {formatDateTime(h.returnedAt!)} · Volvió{" "}
-                      {h.returnedCondition === "dañado" ? "dañado" : "en buen estado"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              {itemDamages.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-destructive">Daños registrados</p>
+                  <ul className="flex flex-col gap-2">
+                    {itemDamages.map((d) => (
+                      <li key={d.id} className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                        <p className="font-medium text-destructive">Daño · {formatDateTime(d.date)}</p>
+                        <p>{d.description}</p>
+                        <p className="text-xs text-muted-foreground">Responsable: {d.responsible} · Registró: {d.reportedBy}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {history.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Préstamos anteriores</p>
+                  <ul className="flex flex-col gap-2">
+                    {history.map((h) => (
+                      <li key={h.id} className="rounded-md border p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium">
+                            {h.borrowerName}
+                            {h.course && ` (${h.course})`}
+                          </p>
+                          <span className={h.returnedCondition === "dañado" ? "text-xs text-destructive" : "text-xs text-success"}>
+                            {h.returnedCondition === "dañado" ? "Devuelto - Dañado" : "Devuelto - Buen estado"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {formatDateTime(h.startedAt)} → {formatDateTime(h.returnedAt!)} · {h.borrowerType === "alumno" ? "Alumno" : h.batchId ? "Docente (Lote)" : "Docente"} · Registró: {h.registeredBy}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

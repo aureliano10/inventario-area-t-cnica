@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
-import { Plus, Search, X } from "lucide-react"
+import { Plus, Search, Undo2, UserPlus, X } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,7 +17,7 @@ import { formatDateTime, useStore } from "@/lib/store"
 import type { Sector } from "@/lib/types"
 
 export function InventoryScreen() {
-  const { items, damages, addItem, user, teachers, addTeacher, removeTeacher } = useStore()
+  const { items, damages, loans, addItem, user, teachers, addTeacher, removeTeacher, activeLoanFor, findItem } = useStore()
   const [teacherForm, setTeacherForm] = useState("")
   const [teacherError, setTeacherError] = useState<string | null>(null)
   const [teacherQuery, setTeacherQuery] = useState("")
@@ -26,6 +27,12 @@ export function InventoryScreen() {
   const [status, setStatus] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", category: "", sector: "" as "" | Sector, location: "", code: "" })
+  const [selectedCode, setSelectedCode] = useState<string | null>(null)
+
+  const selectedItem = selectedCode ? findItem(selectedCode) : undefined
+  const selectedLoan = selectedItem ? activeLoanFor(selectedItem.code) : undefined
+  const selectedHistory = selectedItem ? loans.filter((l) => l.itemCode === selectedItem.code && l.returnedAt) : []
+  const selectedDamages = selectedItem ? damages.filter((d) => d.itemCode === selectedItem.code) : []
 
   const filteredTeachersModal = useMemo(() => {
     const q = teacherQuery.trim().toLowerCase()
@@ -41,6 +48,8 @@ export function InventoryScreen() {
       (!q || i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q))
     )
   })
+
+  const hasFilters = !!(sector || status || query.trim())
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -151,28 +160,38 @@ export function InventoryScreen() {
         <TabsContent value="equipos" className="mt-4">
           <Card>
             <CardContent className="flex flex-col gap-4">
-              <div className="grid gap-3 sm:grid-cols-[1fr_180px_180px]">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    aria-label="Buscar equipo"
-                    placeholder="Buscar por código, nombre o categoría…"
-                    className="h-10 pl-9"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
+              <div className="flex flex-col gap-3">
+                <div className="grid gap-3 sm:grid-cols-[1fr_180px_180px]">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      aria-label="Buscar equipo"
+                      placeholder="Buscar por código, nombre o categoría…"
+                      className="h-10 pl-9"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                  </div>
+                  <NativeSelect aria-label="Filtrar por sector" value={sector} onChange={(e) => setSector(e.target.value)}>
+                    <option value="">Todos los sectores</option>
+                    <option>Área Técnica</option>
+                    <option>Biblioteca</option>
+                  </NativeSelect>
+                  <NativeSelect aria-label="Filtrar por estado" value={status} onChange={(e) => setStatus(e.target.value)}>
+                    <option value="">Todos los estados</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="prestado">Prestado</option>
+                    <option value="dañado">Dañado</option>
+                  </NativeSelect>
                 </div>
-                <NativeSelect aria-label="Filtrar por sector" value={sector} onChange={(e) => setSector(e.target.value)}>
-                  <option value="">Todos los sectores</option>
-                  <option>Área Técnica</option>
-                  <option>Biblioteca</option>
-                </NativeSelect>
-                <NativeSelect aria-label="Filtrar por estado" value={status} onChange={(e) => setStatus(e.target.value)}>
-                  <option value="">Todos los estados</option>
-                  <option value="disponible">Disponible</option>
-                  <option value="prestado">Prestado</option>
-                  <option value="dañado">Dañado</option>
-                </NativeSelect>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-muted-foreground">Mostrando {filtered.length} de {items.length} equipos</p>
+                  {hasFilters && (
+                    <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setSector(""); setStatus(""); }}>
+                      Limpiar filtros
+                    </Button>
+                  )}
+                </div>
               </div>
               <Table>
                 <TableHeader>
@@ -180,20 +199,19 @@ export function InventoryScreen() {
                     <TableHead>Código</TableHead>
                     <TableHead>Nombre</TableHead>
                     <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                    <TableHead className="hidden sm:table-cell">Ubicación</TableHead>
+                    <TableHead className="hidden sm:table-cell">Sector</TableHead>
+                    <TableHead className="hidden lg:table-cell">Ubicación</TableHead>
                     <TableHead>Estado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => (
-                    <TableRow key={i.code}>
+                    <TableRow key={i.code} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedCode(i.code)}>
                       <TableCell className="font-mono">{i.code}</TableCell>
                       <TableCell className="font-medium">{i.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{i.category}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {i.location}
-                        <span className="block text-xs text-muted-foreground">{i.sector}</span>
-                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">{i.sector}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{i.location}</TableCell>
                       <TableCell>
                         <StatusBadge status={i.status} />
                       </TableCell>
@@ -201,7 +219,7 @@ export function InventoryScreen() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                         No hay equipos con esos filtros.
                       </TableCell>
                     </TableRow>
@@ -255,6 +273,125 @@ export function InventoryScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <Card className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden">
+            <div className="flex items-start justify-between gap-3 border-b p-6">
+              <div>
+                <p className="text-lg font-semibold">{selectedItem.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedItem.code} · {selectedItem.category} · {selectedItem.sector}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedCode(null)}>
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex flex-col gap-6 p-6">
+                <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Código</p>
+                    <p className="font-mono font-medium">{selectedItem.code}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Estado</p>
+                    <p className="font-medium capitalize">{selectedItem.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Ubicación</p>
+                    <p className="font-medium">{selectedItem.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Sector</p>
+                    <p className="font-medium">{selectedItem.sector}</p>
+                  </div>
+                </div>
+
+                {selectedLoan ? (
+                  <div className="flex flex-col gap-2 rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
+                    <p className="font-medium">Préstamo activo</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-muted-foreground">Quien lo tiene</p>
+                        <p className="font-medium">{selectedLoan.borrowerName}{selectedLoan.course ? ` · ${selectedLoan.course}` : ""}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Autorizó</p>
+                        <p className="font-medium">{selectedLoan.authorizedBy ?? "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Registró</p>
+                        <p className="font-medium">{selectedLoan.registeredBy}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Desde</p>
+                        <p className="font-medium tabular-nums">{formatDateTime(selectedLoan.startedAt)}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Link href="/devolucion" className={buttonVariants({ size: "sm" })}>
+                        <Undo2 className="mr-2 size-4" aria-hidden="true" />
+                        Registrar devolución
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border p-4 text-sm">
+                    <p className="font-medium">Disponible</p>
+                    <p className="text-muted-foreground">{selectedItem.status === "disponible" ? `Se encuentra en ${selectedItem.location}.` : `Estado: ${selectedItem.status}`}</p>
+                    {selectedItem.status === "disponible" && user?.role === "encargado" && (
+                      <div className="pt-3">
+                        <Link href={`/prestamos/alumno?code=${encodeURIComponent(selectedItem.code)}`} className={buttonVariants({ size: "sm" })}>
+                          <UserPlus className="mr-2 size-4" aria-hidden="true" />
+                          Prestar
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedDamages.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium text-destructive">Daños registrados</p>
+                    <div className="flex flex-col gap-2">
+                      {selectedDamages.map((d) => (
+                        <div key={d.id} className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                          <p className="font-medium text-destructive">{formatDateTime(d.date)}</p>
+                          <p>{d.description}</p>
+                          <p className="text-xs text-muted-foreground">Responsable: {d.responsible} · Registró: {d.reportedBy}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedHistory.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium">Préstamos anteriores</p>
+                    <div className="flex flex-col gap-2">
+                      {selectedHistory.map((h) => (
+                        <div key={h.id} className="rounded-md border p-3 text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium">{h.borrowerName}{h.course ? ` (${h.course})` : ""}</p>
+                            <span className={h.returnedCondition === "dañado" ? "text-xs text-destructive" : "text-xs text-success"}>
+                              {h.returnedCondition === "dañado" ? "Devuelto - Dañado" : "Devuelto - Buen estado"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            {formatDateTime(h.startedAt)} → {formatDateTime(h.returnedAt!)} · {h.borrowerType === "alumno" ? "Alumno" : h.batchId ? "Docente (Lote)" : "Docente"} · Registró: {h.registeredBy}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {showTeachersModal && user?.role === "encargado" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

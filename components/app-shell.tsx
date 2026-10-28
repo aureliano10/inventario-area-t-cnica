@@ -29,7 +29,6 @@ const NAV: { href: string; label: string; icon: typeof Boxes; roles: Role[]; sho
   { href: "/prestamos/lote", label: "Préstamo por lote", icon: Users, roles: ["encargado"], shortcut: "L", section: "Préstamos" },
   { href: "/devolucion", label: "Devoluciones", icon: Undo2, roles: ["encargado"], shortcut: "D", section: "Préstamos" },
   { href: "/proyectores", label: "Proyectores", icon: Projector, roles: ["encargado"], shortcut: "P", section: "Préstamos" },
-  { href: "/consulta", label: "Consulta rápida", icon: ScanSearch, roles: ["encargado"], shortcut: "C", section: "Gestión" },
   { href: "/historial", label: "Historial", icon: History, roles: ["encargado", "directivo"], section: "Gestión" },
   { href: "/inventario", label: "Inventario", icon: ClipboardList, roles: ["encargado", "directivo"], section: "Gestión" },
   { href: "/reportes", label: "Reportes", icon: FileDown, roles: ["encargado", "directivo"], section: "Gestión" },

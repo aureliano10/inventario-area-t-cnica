@@ -65,10 +65,10 @@ export function ReportsScreen() {
               itemName(l.itemCode),
               itemSector(l.itemCode),
               l.borrowerName + (l.course ? ` (${l.course})` : ""),
-              l.borrowerType === "alumno" ? "Alumno" : "Docente",
+              l.borrowerType === "alumno" ? "Alumno" : l.batchId ? "Docente (Lote)" : "Docente",
               formatDateTime(l.startedAt),
               l.returnedAt ? formatDateTime(l.returnedAt) : "Pendiente",
-              l.returnedCondition ?? "—",
+              l.returnedCondition ? (l.returnedCondition === "dañado" ? "Dañado" : "Buen estado") : "—",
               l.shift,
               l.registeredBy,
             ]),
@@ -188,7 +188,7 @@ export function ReportsScreen() {
           <CardTitle>{REPORTS[report]}</CardTitle>
           <CardDescription>
             ENS Dalmacio Vélez Sarsfield · {sector || "Todos los sectores"} · Generado el{" "}
-            {new Date().toLocaleDateString("es-AR")} · {rows.length} registros
+            {new Date().toLocaleDateString("es-AR")} · {rows.length} {rows.length === 1 ? "registro" : "registros"}
           </CardDescription>
         </CardHeader>
         <CardContent>
