@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { Plus, Search, Undo2, UserPlus, X } from "lucide-react"
+import { AlertTriangle, Plus, Search, Undo2, UserPlus, Wrench, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,10 +14,11 @@ import { NativeSelect } from "@/components/native-select"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { formatDateTime, useStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import type { Sector } from "@/lib/types"
 
 export function InventoryScreen() {
-  const { items, damages, loans, addItem, user, teachers, addTeacher, removeTeacher, activeLoanFor, findItem } = useStore()
+  const { items, damages, loans, addItem, user, teachers, addTeacher, removeTeacher, activeLoanFor, findItem, markRepaired } = useStore()
   const [teacherForm, setTeacherForm] = useState("")
   const [teacherError, setTeacherError] = useState<string | null>(null)
   const [teacherQuery, setTeacherQuery] = useState("")
@@ -28,6 +29,17 @@ export function InventoryScreen() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: "", category: "", sector: "" as "" | Sector, location: "", code: "" })
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
+  const [confirmingRepair, setConfirmingRepair] = useState(false)
+
+  function openItem(code: string) {
+    setConfirmingRepair(false)
+    setSelectedCode(code)
+  }
+
+  function closeItem() {
+    setConfirmingRepair(false)
+    setSelectedCode(null)
+  }
 
   const selectedItem = selectedCode ? findItem(selectedCode) : undefined
   const selectedLoan = selectedItem ? activeLoanFor(selectedItem.code) : undefined
@@ -50,6 +62,7 @@ export function InventoryScreen() {
   })
 
   const hasFilters = !!(sector || status || query.trim())
+  const damagedItems = items.filter((i) => i.status === "dañado")
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -154,7 +167,7 @@ export function InventoryScreen() {
       <Tabs defaultValue="equipos">
         <TabsList>
           <TabsTrigger value="equipos">Equipos ({items.length})</TabsTrigger>
-          <TabsTrigger value="danos">Historial de daños ({damages.length})</TabsTrigger>
+          <TabsTrigger value="danos">Dañados ({damagedItems.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="equipos" className="mt-4">
@@ -206,7 +219,7 @@ export function InventoryScreen() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => (
-                    <TableRow key={i.code} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedCode(i.code)}>
+                    <TableRow key={i.code} className="cursor-pointer hover:bg-muted/50" onClick={() => openItem(i.code)}>
                       <TableCell className="font-mono">{i.code}</TableCell>
                       <TableCell className="font-medium">{i.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{i.category}</TableCell>
@@ -232,38 +245,41 @@ export function InventoryScreen() {
 
         <TabsContent value="danos" className="mt-4">
           <Card>
-            <CardContent>
+            <CardContent className="flex flex-col gap-3">
+              <p className="text-sm text-muted-foreground">
+                Equipos fuera de servicio por daño: no se pueden prestar hasta repararlos. Al marcarlos como reparados
+                dejan de aparecer acá y quedan en el historial de daños (sección Historial).
+              </p>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Fecha</TableHead>
                     <TableHead>Equipo</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead className="hidden md:table-cell">Responsable</TableHead>
+                    <TableHead className="hidden sm:table-cell">Sector</TableHead>
+                    <TableHead className="hidden lg:table-cell">Ubicación</TableHead>
+                    <TableHead>Daño</TableHead>
+                    <TableHead className="hidden md:table-cell">Fecha</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {damages.map((d) => {
-                    const item = items.find((i) => i.code === d.itemCode)
+                  {damagedItems.map((i) => {
+                    const d = damages.find((x) => x.itemCode === i.code && !x.repairedAt)
                     return (
-                      <TableRow key={d.id}>
-                        <TableCell className="tabular-nums">{formatDateTime(d.date)}</TableCell>
+                      <TableRow key={i.code} className="cursor-pointer hover:bg-muted/50" onClick={() => openItem(i.code)}>
                         <TableCell>
-                          <p className="font-medium">{item?.name}</p>
-                          <p className="font-mono text-xs text-muted-foreground">{d.itemCode}</p>
+                          <p className="font-medium">{i.name}</p>
+                          <p className="font-mono text-xs text-muted-foreground">{i.code}</p>
                         </TableCell>
-                        <TableCell className="max-w-xs whitespace-normal">{d.description}</TableCell>
-                        <TableCell className="hidden whitespace-normal md:table-cell">
-                          {d.responsible}
-                          <span className="block text-xs text-muted-foreground">Registró: {d.reportedBy}</span>
-                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">{i.sector}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{i.location}</TableCell>
+                        <TableCell className="max-w-xs whitespace-normal text-muted-foreground">{d?.description ?? "—"}</TableCell>
+                        <TableCell className="hidden tabular-nums md:table-cell">{d ? formatDateTime(d.date) : "—"}</TableCell>
                       </TableRow>
                     )
                   })}
-                  {damages.length === 0 && (
+                  {damagedItems.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                        No hay daños registrados.
+                      <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                        No hay equipos dañados. Todos están en servicio.
                       </TableCell>
                     </TableRow>
                   )}
@@ -284,7 +300,7 @@ export function InventoryScreen() {
                   {selectedItem.code} · {selectedItem.category} · {selectedItem.sector}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedCode(null)}>
+              <Button variant="ghost" size="icon" onClick={closeItem}>
                 <X className="size-4" />
               </Button>
             </div>
@@ -337,11 +353,60 @@ export function InventoryScreen() {
                       </Link>
                     </div>
                   </div>
+                ) : selectedItem.status === "dañado" ? (
+                  <div className="flex flex-col gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-destructive">Fuera de servicio (dañado)</p>
+                        <p className="text-muted-foreground">No se puede prestar hasta que se repare.</p>
+                      </div>
+                    </div>
+                    {user?.role === "encargado" &&
+                      (confirmingRepair ? (
+                        <div className="flex flex-col gap-2 rounded-md border bg-card p-3">
+                          <p className="font-medium">¿Confirmás que el equipo está reparado?</p>
+                          <p className="text-xs text-muted-foreground">
+                            Volverá a figurar como disponible para préstamos. El registro de daño se conserva en el
+                            historial.
+                          </p>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const res = markRepaired(selectedItem.code)
+                                if (!res.ok) {
+                                  toast.error(res.error)
+                                  return
+                                }
+                                toast.success("Equipo marcado como reparado", {
+                                  description: `${selectedItem.name} vuelve a estar disponible.`,
+                                })
+                                setConfirmingRepair(false)
+                              }}
+                            >
+                              <Wrench className="mr-2 size-4" aria-hidden="true" />
+                              Confirmar reparación
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setConfirmingRepair(false)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <Button size="sm" onClick={() => setConfirmingRepair(true)}>
+                            <Wrench className="mr-2 size-4" aria-hidden="true" />
+                            Marcar como reparado
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
                 ) : (
                   <div className="rounded-lg border p-4 text-sm">
                     <p className="font-medium">Disponible</p>
-                    <p className="text-muted-foreground">{selectedItem.status === "disponible" ? `Se encuentra en ${selectedItem.location}.` : `Estado: ${selectedItem.status}`}</p>
-                    {selectedItem.status === "disponible" && user?.role === "encargado" && (
+                    <p className="text-muted-foreground">Se encuentra en {selectedItem.location}.</p>
+                    {user?.role === "encargado" && (
                       <div className="pt-3">
                         <Link href={`/prestamos/alumno?code=${encodeURIComponent(selectedItem.code)}`} className={buttonVariants({ size: "sm" })}>
                           <UserPlus className="mr-2 size-4" aria-hidden="true" />
@@ -354,13 +419,37 @@ export function InventoryScreen() {
 
                 {selectedDamages.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm font-medium text-destructive">Daños registrados</p>
+                    <p className="text-sm font-medium">Daños registrados</p>
                     <div className="flex flex-col gap-2">
                       {selectedDamages.map((d) => (
-                        <div key={d.id} className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
-                          <p className="font-medium text-destructive">{formatDateTime(d.date)}</p>
+                        <div
+                          key={d.id}
+                          className={cn(
+                            "rounded-md border p-3 text-sm",
+                            d.repairedAt ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5",
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={cn("font-medium", d.repairedAt ? "text-success" : "text-destructive")}>
+                              {formatDateTime(d.date)}
+                            </p>
+                            <span
+                              className={cn(
+                                "text-xs font-semibold",
+                                d.repairedAt ? "text-success" : "text-destructive",
+                              )}
+                            >
+                              {d.repairedAt ? "Reparado" : "Pendiente de reparación"}
+                            </span>
+                          </div>
                           <p>{d.description}</p>
                           <p className="text-xs text-muted-foreground">Responsable: {d.responsible} · Registró: {d.reportedBy}</p>
+                          {d.repairedAt && (
+                            <p className="text-xs text-muted-foreground">
+                              Reparado el {formatDateTime(d.repairedAt)}
+                              {d.repairedBy ? ` · por ${d.repairedBy}` : ""}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>

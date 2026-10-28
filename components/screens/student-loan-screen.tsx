@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Check, ChevronDown, Clock, PackageOpen, Search, X } from "lucide-react"
+import { Check, ChevronDown, PackageOpen, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,8 +24,6 @@ const LOGIN_LABELS: Record<string, string> = {
   directora: "Directivo",
 }
 
-type RecentLoan = { student: string; course: string; teacher: string }
-
 function StudentLoanInner() {
   const { lendToStudent, user, items, teachers } = useStore()
   const searchParams = useSearchParams()
@@ -41,15 +39,6 @@ function StudentLoanInner() {
   const [query, setQuery] = useState("")
   const [showScanner, setShowScanner] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [recent, setRecent] = useState<RecentLoan[]>(() => {
-    if (typeof window === "undefined") return []
-    try {
-      const raw = localStorage.getItem("at-recent-simple-loans")
-      return raw ? (JSON.parse(raw) as RecentLoan[]) : []
-    } catch {
-      return []
-    }
-  })
 
   useEffect(() => {
     const code = searchParams.get("code")
@@ -109,14 +98,6 @@ function StudentLoanInner() {
     setSelected((prev) => prev.filter((s) => s.code !== code))
   }
 
-  function applyRecent(r: RecentLoan) {
-    setStudent(r.student)
-    setCourse(r.course)
-    setTeacher(r.teacher)
-    setError(null)
-    setTimeout(() => queryRef.current?.focus(), 0)
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
@@ -124,12 +105,6 @@ function StudentLoanInner() {
     if (!student.trim()) return setError("Ingresá el nombre y apellido de quien retira.")
     const result = lendToStudent({ itemCodes: selected.map((s) => s.code), studentName: student.trim(), course, teacher })
     if (!result.ok) return setError(result.error)
-    const entry: RecentLoan = { student: student.trim(), course, teacher }
-    const next = [entry, ...recent.filter((r) => !(r.student === entry.student && r.course === entry.course && r.teacher === entry.teacher))].slice(0, 5)
-    setRecent(next)
-    try {
-      localStorage.setItem("at-recent-simple-loans", JSON.stringify(next))
-    } catch {}
     toast.success("Préstamo simple registrado", {
       description: `${selected.length} ${selected.length === 1 ? "ítem" : "ítems"} a ${student.trim()}${course ? ` (${course})` : ""}`,
     })
@@ -249,27 +224,6 @@ function StudentLoanInner() {
             <CardDescription>Solo nombre y apellido son obligatorios.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {recent.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="flex items-center gap-2 text-sm font-medium">
-                  <Clock className="size-4 text-muted-foreground" />
-                  Últimos retirados
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {recent.map((r, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => applyRecent(r)}
-                      className="rounded-full border px-2.5 py-1 text-sm hover:bg-muted"
-                    >
-                      {r.student}
-                      {r.course ? ` · ${r.course}` : ""}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="student">Nombre y apellido *</Label>
               <Input ref={studentRef} id="student" className="h-10" value={student} aria-invalid={submitted && !student.trim()} onChange={(e) => setStudent(e.target.value)} placeholder="Quién se lleva los ítems" />

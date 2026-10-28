@@ -75,11 +75,21 @@ export function ReportsScreen() {
         }
       case "danos":
         return {
-          headers: ["Fecha", "Código", "Equipo", "Sector", "Descripción", "Responsable", "Reportado por"],
+          headers: ["Fecha", "Código", "Equipo", "Sector", "Descripción", "Responsable", "Reportado por", "Estado", "Reparado el"],
           rows: damages
             .filter((d) => bySector(d.itemCode))
             .sort((a, b) => b.date.localeCompare(a.date))
-            .map((d) => [formatDateTime(d.date), d.itemCode, itemName(d.itemCode), itemSector(d.itemCode), d.description, d.responsible, d.reportedBy]),
+            .map((d) => [
+              formatDateTime(d.date),
+              d.itemCode,
+              itemName(d.itemCode),
+              itemSector(d.itemCode),
+              d.description,
+              d.responsible,
+              d.reportedBy,
+              d.repairedAt ? "Reparado" : "Pendiente",
+              d.repairedAt ? formatDateTime(d.repairedAt) : "—",
+            ]),
         }
       case "inventario":
         return {

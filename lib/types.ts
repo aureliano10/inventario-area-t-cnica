@@ -42,6 +42,8 @@ export interface DamageRecord {
   responsible: string
   reportedBy: string
   date: string
+  repairedAt?: string
+  repairedBy?: string
 }
 
 export interface Reservation {

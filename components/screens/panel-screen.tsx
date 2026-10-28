@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { AlertTriangle, CalendarCheck, CheckCircle2, History, Package, ScanSearch, Search, Undo2, UserPlus, Users, X } from "lucide-react"
+import { AlertTriangle, CalendarCheck, CheckCircle2, ClipboardList, History, Package, ScanSearch, Search, Undo2, UserPlus, Users, X } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,8 +32,10 @@ export function PanelScreen() {
   )
 
   const todayKey = toDateKey(new Date())
+  // La distinción por turno es operativa del encargado que registra préstamos.
+  // El directivo solo consulta, por lo que no se le marcan préstamos como "de otro turno".
   const isInherited = (startedAt: string, shift: string) =>
-    toDateKey(new Date(startedAt)) !== todayKey || shift !== user?.shift
+    isEncargado && (toDateKey(new Date(startedAt)) !== todayKey || shift !== user?.shift)
   const inherited = active.filter(({ loan }) => isInherited(loan.startedAt, loan.shift))
 
   const filtered = active.filter(({ loan, item }) => {
@@ -66,6 +68,7 @@ export function PanelScreen() {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { href: "/prestamos/simple", label: "Préstamo simple", icon: UserPlus },
+            { href: "/prestamos/lote", label: "Préstamo por lote", icon: ClipboardList },
             { href: "/devolucion", label: "Devoluciones", icon: Undo2 },
             { href: "/consulta", label: "Consulta rápida", icon: ScanSearch },
           ].map((a) => (

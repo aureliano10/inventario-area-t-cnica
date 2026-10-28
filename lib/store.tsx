@@ -23,6 +23,7 @@ interface StoreValue {
   reserveProjector: (input: Omit<Reservation, "id">) => Result
   reserveProjectorMany: (input: { projectorCode: string; slots: Array<{ date: string; slot: number }>; teacher: string; course: string }) => Result
   cancelReservation: (id: string) => void
+  markRepaired: (code: string) => Result
   addItem: (input: {
     name: string
     category: string
@@ -215,6 +216,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       cancelReservation(id) {
         setReservations((prev) => prev.filter((r) => r.id !== id))
+      },
+      markRepaired(code) {
+        const item = findItem(code)
+        if (!item) return { ok: false, error: `El código ${code} no existe en el inventario.` }
+        if (item.status !== "dañado") return { ok: false, error: `${item.name} (${item.code}) no figura como dañado.` }
+        const now = new Date().toISOString()
+        const repairedBy = user?.name ?? ""
+        setDamages((prev) => {
+          const idx = prev.findIndex((d) => d.itemCode === code && !d.repairedAt)
+          if (idx === -1) return prev
+          const next = [...prev]
+          next[idx] = { ...next[idx], repairedAt: now, repairedBy }
+          return next
+        })
+        setStatus([code], "disponible")
+        return { ok: true }
       },
       addItem(input) {
         if (!input.name?.trim()) return { ok: false, error: "Ingresá el nombre de la herramienta/equipo." }

@@ -12,6 +12,7 @@ import { ItemScanner } from "@/components/item-scanner"
 import { ItemSummary } from "@/components/item-summary"
 import { PageHeader } from "@/components/page-header"
 import { formatDateTime, useStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import type { Item } from "@/lib/types"
 
 export function LookupScreen() {
@@ -161,13 +162,32 @@ export function LookupScreen() {
               )}
               {itemDamages.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium text-destructive">Daños registrados</p>
+                  <p className="text-sm font-medium">Daños registrados</p>
                   <ul className="flex flex-col gap-2">
                     {itemDamages.map((d) => (
-                      <li key={d.id} className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                        <p className="font-medium text-destructive">Daño · {formatDateTime(d.date)}</p>
+                      <li
+                        key={d.id}
+                        className={cn(
+                          "rounded-md border p-3",
+                          d.repairedAt ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5",
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={cn("font-medium", d.repairedAt ? "text-success" : "text-destructive")}>
+                            Daño · {formatDateTime(d.date)}
+                          </p>
+                          <span className={cn("text-xs font-semibold", d.repairedAt ? "text-success" : "text-destructive")}>
+                            {d.repairedAt ? "Reparado" : "Pendiente de reparación"}
+                          </span>
+                        </div>
                         <p>{d.description}</p>
                         <p className="text-xs text-muted-foreground">Responsable: {d.responsible} · Registró: {d.reportedBy}</p>
+                        {d.repairedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Reparado el {formatDateTime(d.repairedAt)}
+                            {d.repairedBy ? ` · por ${d.repairedBy}` : ""}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
