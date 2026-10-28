@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, ChevronDown, Filter, PackageOpen, Search, Trash2, Users } from "lucide-react"
+import { Check, ChevronDown, Filter, PackageOpen, Search, Trash2, Users, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -145,9 +145,9 @@ export function BatchLoanScreen() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="size-5" aria-hidden="true" />
-                1. Datos del lote
+                Datos del lote
               </CardTitle>
-              <CardDescription>Docente y curso son obligatorios para armar el lote.</CardDescription>
+              <CardDescription>Docente y curso son obligatorios.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex flex-col gap-2">
@@ -173,26 +173,19 @@ export function BatchLoanScreen() {
 
           <Card className={cn(!canSearch && "opacity-70")}>
             <CardHeader>
-              <CardTitle>2. Seleccionar equipos</CardTitle>
-              <CardDescription>{canSearch ? "Filtrá por categoría o buscá por nombre/código." : "Completá docente y curso para habilitar la búsqueda."}</CardDescription>
+              <CardTitle>Agregar equipos</CardTitle>
+              <CardDescription>{canSearch ? "Buscá y agregá al lote." : "Completá docente y curso para habilitar."}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="batch-search">Buscar</Label>
-                  {canSearch && suggestions.length > 0 && (
-                    <Button type="button" variant="ghost" size="sm" onClick={addAllVisible}>
-                      Seleccionar todos los visibles ({suggestions.length})
-                    </Button>
-                  )}
-                </div>
+                <Label htmlFor="batch-search">Buscar</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <Input
                     ref={searchRef}
                     id="batch-search"
                     className="h-10 pl-8"
-                    placeholder={canSearch ? "Ej. Notebook, Calculadora..." : "Completá docente y curso primero"}
+                    placeholder={canSearch ? "Nombre, código o categoría" : "Completá docente y curso primero"}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     disabled={!canSearch}
@@ -209,6 +202,8 @@ export function BatchLoanScreen() {
                         if (activeIndex >= 0 && activeIndex < suggestions.length) {
                           e.preventDefault()
                           addItem(suggestions[activeIndex])
+                          setQuery("")
+                          setActiveIndex(-1)
                         }
                       } else if (e.key === "Escape") {
                         setQuery("")
@@ -219,18 +214,14 @@ export function BatchLoanScreen() {
                 </div>
                 {suggestions.length > 0 && (
                   <div className="overflow-hidden rounded-md border bg-card shadow-sm">
-                    <div className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground">
-                      <span>Clickeá para agregar al lote. Podés seguir buscando.</span>
-                      <span>↑↓ + Enter</span>
-                    </div>
-                    <ul className="max-h-[min(360px,48vh)] divide-y overflow-y-auto overscroll-contain">
+                    <ul className="max-h-[320px] divide-y overflow-y-auto">
                       {suggestions.map((s, idx) => (
                         <li key={s.code}>
                           <button
                             type="button"
                             className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted", activeIndex === idx && "bg-muted")}
                             onMouseEnter={() => setActiveIndex(idx)}
-                            onClick={() => addItem(s)}
+                            onClick={() => { addItem(s); setQuery(""); setActiveIndex(-1); }}
                           >
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{s.name}</p>
@@ -238,16 +229,13 @@ export function BatchLoanScreen() {
                             </div>
                             <div className="text-right">
                               <p className="font-mono text-xs text-muted-foreground">{s.code}</p>
-                              <p className="text-xs text-emerald-600">+ Agregar</p>
+                              <p className="text-xs text-emerald-600">Agregar</p>
                             </div>
                           </button>
                         </li>
                       ))}
                     </ul>
                   </div>
-                )}
-                {query.trim() && suggestions.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Todos los que coinciden ya fueron agregados al lote.</p>
                 )}
               </div>
 
@@ -277,8 +265,8 @@ export function BatchLoanScreen() {
                   <div className="border-t p-3">
                     <ItemScanner
                       label="Escanear equipos"
-                      onScan={(i) => { toggleItem(i); setShowScanner(false); }}
-                      suggestionFilter={(i) => i.status === "disponible" && i.category !== "Proyector" && !batch.some((b) => b.code === i.code)}
+                      onScan={(i) => { addItem(i); setShowScanner(false); }}
+                      suggestionFilter={(i) => i.status === "disponible" && i.category !== "Proyector"}
                       demoCodes={["NB-01", "NB-02", "NB-03"]}
                     />
                   </div>
@@ -291,9 +279,9 @@ export function BatchLoanScreen() {
         <Card className="flex h-fit flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>3. Lote seleccionado</CardTitle>
+              <CardTitle>Lote a entregar</CardTitle>
               <CardDescription aria-live="polite">
-                {batch.length === 0 ? "Sin ítems seleccionados" : `${batch.length} ${batch.length === 1 ? "equipo" : "equipos"} seleccionados`}
+                {batch.length === 0 ? "Vacío" : `${batch.length} ${batch.length === 1 ? "equipo" : "equipos"}`}
               </CardDescription>
             </div>
             {batch.length > 0 && (
@@ -304,67 +292,24 @@ export function BatchLoanScreen() {
             )}
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {canSearch && (
-              <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
-                <p className="text-sm font-medium">Disponibles para seleccionar</p>
-                <p className="text-sm text-muted-foreground">{suggestions.length} {suggestions.length === 1 ? "resultado" : "resultados"}</p>
-              </div>
-            )}
-            {canSearch ? (
-              suggestions.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-muted-foreground">
-                  <PackageOpen className="size-8" aria-hidden="true" />
-                  <p>No hay ítems disponibles con ese filtro.</p>
-                </div>
-              ) : (
-                <div className="grid max-h-[55vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                  {suggestions.map((s) => {
-                    const selected = batch.some((b) => b.code === s.code)
-                    return (
-                      <button
-                        key={s.code}
-                        type="button"
-                        onClick={() => toggleItem(s)}
-                        className={cn(
-                          "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors",
-                          selected ? "border-primary bg-primary/5" : "hover:bg-muted",
-                        )}
-                      >
-                        <input type="checkbox" checked={selected} readOnly className="mt-1" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{s.name}</p>
-                          <p className="font-mono text-xs text-muted-foreground">{s.code}</p>
-                          <p className="text-xs text-muted-foreground">{s.category} · {s.location}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              )
-            ) : (
-              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-muted-foreground">
+            {batch.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12 text-center text-muted-foreground">
                 <PackageOpen className="size-8" aria-hidden="true" />
-                <p>Completá docente y curso para ver los equipos disponibles.</p>
+                <p>Agregá equipos desde el buscador o el escáner.</p>
               </div>
-            )}
-
-            {batch.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-semibold">En el lote</p>
-                <div className="flex flex-wrap gap-2">
-                  {batch.map((b) => (
-                    <button
-                      key={b.code}
-                      type="button"
-                      onClick={() => removeItem(b.code)}
-                      className="flex items-center gap-2 rounded-full border px-2.5 py-1 text-sm hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <span className="max-w-[160px] truncate">{b.name}</span>
-                      <span className="font-mono text-xs text-muted-foreground">{b.code}</span>
-                      <X className="size-3.5" />
-                    </button>
-                  ))}
-                </div>
+            ) : (
+              <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto pr-1">
+                {batch.map((b) => (
+                  <div key={b.code} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{b.name}</p>
+                      <p className="text-xs text-muted-foreground">{b.category} · {b.location} · <span className="font-mono">{b.code}</span></p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(b.code)} aria-label="Quitar">
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -374,8 +319,8 @@ export function BatchLoanScreen() {
               </Alert>
             )}
 
-            <div className="mt-auto flex flex-col gap-2">
-              <p className="text-center text-sm text-muted-foreground">Registrado por {user?.username ? ({ mgarcia: "Encargado 1", lperez: "Encargado 2", directora: "Directivo" } as any)[user.username] || user?.name : user?.name} · Turno {user?.shift}</p>
+            <div className="hidden flex-col gap-2 border-t pt-4 xl:flex">
+              <p className="text-center text-xs text-muted-foreground">Registrado por {user?.username ? ({ mgarcia: "Encargado 1", lperez: "Encargado 2", directora: "Directivo" } as any)[user.username] || user?.name : user?.name} · Turno {user?.shift}</p>
               <Button size="lg" className="h-11 w-full" onClick={confirm} disabled={batch.length === 0 || !teacher.trim() || !course.trim()}>
                 <Check className="mr-2 size-4" aria-hidden="true" />
                 Registrar lote ({batch.length})
