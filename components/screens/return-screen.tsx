@@ -33,6 +33,25 @@ function makeGroupKey(l: Loan) {
   return `solo:${l.borrowerType}:${l.borrowerName}:${l.course ?? ""}:${l.authorizedBy ?? ""}:${l.startedAt}:${l.registeredBy}`
 }
 
+function formatRelativeTime(iso: string) {
+  try {
+    const date = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    if (diffMin < 1) return "Hace un momento"
+    if (diffMin < 60) return `Hace ${diffMin} min`
+    const diffH = Math.floor(diffMin / 60)
+    if (diffH < 24) return `Hace ${diffH}h`
+    const diffD = Math.floor(diffH / 24)
+    if (diffD === 1) return "Ayer"
+    if (diffD < 7) return `Hace ${diffD} días`
+    return date.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })
+  } catch {
+    return iso
+  }
+}
+
 export function ReturnScreen() {
   const { loans, items, registerReturn, findItem } = useStore()
   const scannerRef = useRef<HTMLInputElement>(null)
@@ -44,6 +63,7 @@ export function ReturnScreen() {
   const [description, setDescription] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [showScanner, setShowScanner] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<"todos" | "alumnos" | "docentes" | "lotes">("todos")
 
   const groups = useMemo<Group[]>(() => {
     const active = loans.filter((l) => !l.returnedAt)
@@ -74,8 +94,12 @@ export function ReturnScreen() {
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return groups
-    return groups.filter((g) => {
+    let base = groups
+    if (typeFilter === "alumnos") base = base.filter((g) => g.borrowerType === "alumno")
+    else if (typeFilter === "docentes") base = base.filter((g) => g.borrowerType === "docente")
+    else if (typeFilter === "lotes") base = base.filter((g) => !!g.batchId)
+    if (!q) return base
+    return base.filter((g) => {
       if (g.borrowerName.toLowerCase().includes(q)) return true
       if (g.course?.toLowerCase().includes(q)) return true
       if (g.authorizedBy?.toLowerCase().includes(q)) return true
@@ -85,7 +109,7 @@ export function ReturnScreen() {
         return l.itemCode.toLowerCase().includes(q) || it?.name.toLowerCase().includes(q)
       })
     })
-  }, [groups, query, items])
+  }, [groups, query, items, typeFilter])
 
   function toggle(key: string) {
     setExpanded((prev) => {
@@ -173,15 +197,23 @@ export function ReturnScreen() {
       <PageHeader title="Devoluciones" description="Seleccioná el préstamo activo y devolvé ítem por ítem o todo el grupo." />
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input
-              placeholder="Buscar por alumno, docente, lote, código o herramienta..."
-              className="pl-8"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                placeholder="Buscar por alumno, docente, lote, código o herramienta..."
+                className="pl-8"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant={typeFilter === "todos" ? "default" : "outline"} onClick={() => setTypeFilter("todos")}>Todos</Button>
+              <Button size="sm" variant={typeFilter === "alumnos" ? "default" : "outline"} onClick={() => setTypeFilter("alumnos")}>Alumnos</Button>
+              <Button size="sm" variant={typeFilter === "docentes" ? "default" : "outline"} onClick={() => setTypeFilter("docentes")}>Docentes</Button>
+              <Button size="sm" variant={typeFilter === "lotes" ? "default" : "outline"} onClick={() => setTypeFilter("lotes")}>Solo lotes</Button>
+            </div>
           </div>
           <Button variant="outline" onClick={() => setShowScanner((s) => !s)}>
             {showScanner ? "Ocultar escáner" : "Usar escáner como atajo"}
@@ -209,7 +241,8 @@ export function ReturnScreen() {
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
               <CheckCircle2 className="size-10 text-success" aria-hidden="true" />
-              <p className="font-medium">No hay préstamos activos para devolver.</p>
+              <p className="font-medium">{query.trim() ? "Sin resultados para esa búsqueda." : "No hay préstamos activos para devolver."}</p>
+              <p className="text-sm text-muted-foreground">{query.trim() ? "Probá con otro término o cambiá los filtros." : "Cuando se registre un préstamo, aparecerá acá."}</p>
             </CardContent>
           </Card>
         ) : (
@@ -220,8 +253,9 @@ export function ReturnScreen() {
               const it0 = g.loans[0]
               const item0 = items.find((i) => i.code === it0.itemCode)
 
+              const isBatch = !!g.batchId
               return (
-                <Card key={g.key}>
+                <Card key={g.key} className={cn("overflow-hidden", isBatch ? "border-l-4 border-l-primary/70" : "border-l-4 border-l-muted")}>
                   <button
                     type="button"
                     className="flex w-full items-center justify-between gap-3 p-4 text-left"
@@ -230,17 +264,22 @@ export function ReturnScreen() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold">{g.borrowerName}</p>
-                        {g.borrowerType === "alumno" && g.course && <span className="text-sm text-muted-foreground">· {g.course}</span>}
-                        {g.batchId && <span className="rounded bg-muted px-1.5 py-0.5 text-xs">Lote {g.batchId}</span>}
+                        {g.borrowerType === "alumno" && g.course && <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{g.course}</span>}
+                        {isBatch ? <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">Por lote</span> : <span className="rounded bg-muted px-1.5 py-0.5 text-xs">Préstamo simple</span>}
+                        {g.batchId && <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">{g.batchId}</span>}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {g.borrowerType === "alumno" ? `Alumno${g.authorizedBy ? ` · Autorizó: ${g.authorizedBy}` : ""}` : "Docente"}
-                        {" · "}Registró: {g.registeredBy} · Turno {g.shift} · Desde {formatDateTime(g.startedAt)}
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {g.borrowerType === "alumno" ? "Alumno" : "Docente"}
+                        {g.authorizedBy ? ` · Autorizó: ${g.authorizedBy}` : ""}
+                        {` · Registró: ${g.registeredBy} · Turno ${g.shift}`}
                       </p>
-                      <p className="mt-1 text-sm font-medium">
-                        {pendingCount} {pendingCount === 1 ? "ítem pendiente" : "ítems pendientes"} de devolver
-                        {item0 && pendingCount === 1 && ` · ${item0.name} (${it0.itemCode})`}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                          Pendientes: {pendingCount}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{formatRelativeTime(g.startedAt)}</span>
+                        {item0 && pendingCount === 1 && <span className="text-xs text-muted-foreground">· {item0.name} ({it0.itemCode})</span>}
+                      </div>
                     </div>
                     {isOpen ? <ChevronDown className="size-5 text-muted-foreground" /> : <ChevronRight className="size-5 text-muted-foreground" />}
                   </button>
@@ -249,9 +288,11 @@ export function ReturnScreen() {
                     <CardContent className="border-t pt-4">
                       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm text-muted-foreground">Podés devolver ítem por ítem o todo el préstamo junto.</p>
-                        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); startBulkReturn(g) }}>
-                          Devolver todo el préstamo
-                        </Button>
+                        {pendingCount > 1 && (
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); startBulkReturn(g) }}>
+                            Devolver todo el préstamo
+                          </Button>
+                        )}
                       </div>
                       <div className="flex flex-col divide-y">
                         {g.loans.map((loan) => {
@@ -260,10 +301,10 @@ export function ReturnScreen() {
                             <div key={loan.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                               <div className="min-w-0">
                                 <p className="font-medium">{it?.name || loan.itemCode}</p>
-                                <p className="font-mono text-xs text-muted-foreground">{loan.itemCode} · {it?.category} · {it?.location}</p>
+                                <p className="text-xs text-muted-foreground">{loan.itemCode} · {it?.category} · {it?.location}</p>
                               </div>
-                              <Button size="sm" onClick={() => startReturn(loan)}>
-                                Marcar devuelto
+                              <Button size="sm" variant="outline" onClick={() => startReturn(loan)}>
+                                Devolver...
                               </Button>
                             </div>
                           )
